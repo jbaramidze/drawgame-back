@@ -32,6 +32,20 @@ export class GameService {
         await Game.updateOne({code}, {$push: {players: user}});
         return ResponseOk(null);
     }
+
+    public async startGame(code: string, user: string): Promise<Response<null>> {
+        const game = await Game.findOne({code}, {"state": 1, "owner": 1});
+        if (!game) {
+            return ResponseFail(-1);
+        }
+
+        if (game.get("state") !== "created") {
+            return ResponseFail(-2);
+        }
+
+        await Game.updateOne({code}, {$set: {state: "started"}});
+        return ResponseOk(null);
+    }
 }
 
 export interface GeneratedGameCode {

@@ -39,6 +39,17 @@ export class MainRouter {
 
                 res.json(await this.gameService.joinGame(req.params.code, req.body.user));
             });
+
+        this.router.post("/game/:code/start",
+            [body("user").isString().notEmpty()],
+            // @ts-ignore
+            async (req, res) => {
+                if (!this.validate(req, res)) {
+                    return;
+                }
+
+                res.json(await this.gameService.startGame(req.params.code, req.body.user));
+            });
     }
 
     private validate(req: any, res: any) {
