@@ -1,13 +1,13 @@
 import express from "express"
 import {body, validationResult, param} from "express-validator";
-import {GameService} from "./services/GameService";
+import {GameService} from "../services/GameService";
 
-export class MainRouter {
+export class GameRouter {
     private readonly router = express.Router();
 
     constructor(private readonly gameService: GameService) {
 
-        this.router.post("/game",
+        this.router.post("/",
             [body('user').isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {
@@ -18,7 +18,7 @@ export class MainRouter {
                 res.json(await this.gameService.newGame(req.body.user));
             });
 
-        this.router.get("/game/:code",
+        this.router.get("/:code",
             [param("code").isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {
@@ -29,7 +29,7 @@ export class MainRouter {
                 res.json(await this.gameService.getGame(req.params.code))
             });
 
-        this.router.post("/game/:code/join",
+        this.router.post("/:code/join",
             [body('user').isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {
@@ -40,7 +40,7 @@ export class MainRouter {
                 res.json(await this.gameService.joinGame(req.params.code, req.body.user));
             });
 
-        this.router.post("/game/:code/start",
+        this.router.post("/:code/start",
             [body("user").isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {

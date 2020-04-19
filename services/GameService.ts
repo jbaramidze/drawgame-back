@@ -12,7 +12,7 @@ export class GameService {
     }
 
     public async getGame(code: string): Promise<Response<null>> {
-        const game = await Game.findOne({code}, {"_id": 0, "__v": 0, "createdAt": 0, "updatedAt": 0});
+        const game = await Game.findOne({code}, {"_id": 0, "__v": 0, "createdAt": 0, "updatedAt": 0, "players._id": 0});
         if (!game) {
             return ResponseFail(-1);
         }
@@ -30,12 +30,21 @@ export class GameService {
             return ResponseFail(-2);
         }
 
-        const count = await Word.countDocuments();
-        const index = Math.floor(Math.random() * count);
-        const words = await Word.find();
-
-        await Game.updateOne({code}, {$push: {players: {name: user, word: words[index].get("word")}}});
+        const word = await this.getNonexistentWord(code);
+        await Game.updateOne({code}, {$push: {players: {name: user, word}}});
         return ResponseOk(null);
+    }
+
+    private async getNonexistentWord(code: string) {
+        const count = await Word.countDocuments();
+        let word;
+        do {
+            const index = Math.floor(Math.random() * count);
+            const words = await Word.find();
+            word = words[index].get("word");
+        } while ((await Game.find({"$and": [{code}, {"players.word": word}]})).length > 0);
+
+        return word;
     }
 
     public async startGame(code: string, user: string): Promise<Response<null>> {
