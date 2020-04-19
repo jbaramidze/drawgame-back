@@ -6,7 +6,8 @@ import {ResponseOk, Response, ResponseFail} from "../utils/Response";
 export class GameService {
     public async newGame(user: string): Promise<Response<GeneratedGameCode>> {
         const code = randomString(4);
-        const game = new Game({code, owner: user, players: [], state: "created"});
+        const word = await this.getNonexistentWord(code);
+        const game = new Game({code, owner: user, players: [{name: user, word}], state: "created"});
         await game.save();
         return ResponseOk({code});
     }
