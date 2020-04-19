@@ -1,5 +1,6 @@
 import {randomString} from "../utils/other";
 import Game from "../models/game.model";
+import Word from "../models/word.model";
 import {ResponseOk, Response, ResponseFail} from "../utils/Response";
 
 export class GameService {
@@ -29,7 +30,11 @@ export class GameService {
             return ResponseFail(-2);
         }
 
-        await Game.updateOne({code}, {$push: {players: user}});
+        const count = await Word.countDocuments();
+        const index = Math.floor(Math.random() * count);
+        const words = await Word.find();
+
+        await Game.updateOne({code}, {$push: {players: {name: user, word: words[index].get("word")}}});
         return ResponseOk(null);
     }
 

@@ -1,26 +1,10 @@
-import express, {Router} from "express"
 import mongoose from "mongoose";
-import cors from "cors"
-import {MainRouter} from "./MainRouter"
-import {GameService} from "./services/GameService";
+const app = require("./server");
 
-async function init(router: Router) {
-    const app = express();
-    app.use(cors());
-    app.use(express.json());
-    app.use("/", router);
-    const port = 3000;
+mongoose.connect("mongodb://localhost:27017/drawful", {useNewUrlParser: true, useUnifiedTopology: true})
+    .catch((e) => {
+        console.log("ERROR! Failed connecting to mongoose" + JSON.stringify(e));
+    });
 
-    (async() => {
-        await mongoose.connect("mongodb://localhost:27017/drawful", {useNewUrlParser: true, useUnifiedTopology: true});
-        app.listen(port, () => console.log(`Listening at http://localhost:${port}`));
-    })();
-}
-
-const gameService = new GameService();
-const mainRouter = new MainRouter(gameService);
-
-
-init(mainRouter.getRouter()).then();
-
+app.listen(3000, () => console.log(`Listening at http://localhost:${3000}`));
 
