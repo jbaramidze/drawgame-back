@@ -1,5 +1,5 @@
 import express from "express"
-import {body, validationResult, param} from "express-validator";
+import {body, validationResult, param, query} from "express-validator";
 import {GameService} from "../services/GameService";
 
 export class GameRouter {
@@ -19,14 +19,15 @@ export class GameRouter {
             });
 
         this.router.get("/:code",
-            [param("code").isString().notEmpty()],
+            [param("code").isString().notEmpty(),
+                      query("user").isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {
                 if (!this.validate(req, res)) {
                     return;
                 }
 
-                res.json(await this.gameService.getGame(req.params.code))
+                res.json(await this.gameService.getGame(req.params.code, req.query.user))
             });
 
         this.router.post("/:code/join",
@@ -38,6 +39,18 @@ export class GameRouter {
                 }
 
                 res.json(await this.gameService.joinGame(req.params.code, req.body.user));
+            });
+
+        this.router.post("/:code/1/savepic",
+            [body('user').isString().notEmpty(),
+                      body('pic').isString().notEmpty()],
+            // @ts-ignore
+            async (req, res) => {
+                if (!this.validate(req, res)) {
+                    return;
+                }
+
+                res.json(await this.gameService.savePic(req.params.code, req.body.user, req.body.pic));
             });
 
         this.router.post("/:code/start",

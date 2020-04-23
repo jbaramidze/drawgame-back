@@ -1,5 +1,5 @@
 import {randomString} from "../utils/other";
-import Game from "../models/game.model";
+import Game, {StateEnum} from "../models/game.model";
 import Word from "../models/word.model";
 import {ResponseOk, Response, ResponseFail} from "../utils/Response";
 
@@ -12,13 +12,26 @@ export class GameService {
         return ResponseOk({code});
     }
 
-    public async getGame(code: string): Promise<Response<null>> {
-        const game = await Game.findOne({code}, {"_id": 0, "__v": 0, "createdAt": 0, "updatedAt": 0, "players._id": 0});
-        if (!game) {
+    public async getGame(code: string, user: string): Promise<Response<GameResponse>> {
+        const gameDocument = await Game.findOne({code});
+        if (!gameDocument) {
             return ResponseFail(-1);
         }
 
-        return ResponseOk(game.toObject());
+        const game = gameDocument.toObject();
+        const ret: GameResponse = {
+            code: game.code,
+            owner: game.owner,
+            players: game.players.map((p) => {
+                return {
+                    name: p.name
+                }
+            }),
+            state: game.state,
+            word: game.players.find((e) => e.name === user)?.word
+        };
+
+        return ResponseOk(ret);
     }
 
     public async joinGame(code: string, user: string): Promise<Response<null>> {
@@ -32,7 +45,26 @@ export class GameService {
         }
 
         const word = await this.getNonexistentWord(code);
-        await Game.updateOne({code}, {$push: {players: {name: user, word}}});
+        await Game.updateOne({code}, {$push: {players: {name: user, word, waiting: true}}});
+        return ResponseOk(null);
+    }
+
+    public async savePic(code: string, user: string, pic: string): Promise<Response<null>> {
+        const game = await Game.findOne({code}, {"state": 1});
+        if (!game) {
+            return ResponseFail(-1);
+        }
+
+        if (game.get("state") !== "waiting_for_initial_pic") {
+            return ResponseFail(-2);
+        }
+
+        await Game.updateOne({code, players: {$elemMatch: {name: user}}}, {$set: {"players.$.pic": pic, "players.$.waiting": false}});
+
+        if ((await Game.find({code, "players.waiting": true})).length === 0) {
+            await Game.updateOne({code}, {$set: {state: "started"}});
+        }
+
         return ResponseOk(null);
     }
 
@@ -58,7 +90,7 @@ export class GameService {
             return ResponseFail(-2);
         }
 
-        await Game.updateOne({code}, {$set: {state: "started"}});
+        await Game.updateOne({code}, {$set: {state: "waiting_for_initial_pic"}});
         return ResponseOk(null);
     }
 }
@@ -66,3 +98,13 @@ export class GameService {
 export interface GeneratedGameCode {
     code: string;
 }
+
+export interface GameResponse {
+    code: string;
+    owner: string;
+    players: Array<{
+        name: string;
+    }>;
+    state: StateEnum;
+    word?: string;
+};
