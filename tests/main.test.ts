@@ -1,5 +1,5 @@
 import {GameResponse} from "../services/GameService";
-import {StateEnum} from "../models/game.model";
+import Game, {StateEnum} from "../models/game.model";
 
 const mongoose = require('mongoose');
 const request = require('supertest');
@@ -93,8 +93,16 @@ describe('Post Endpoints', () => {
         savepic = await request(app).post("/game/" + code + "/1/savepic").send({user: "keti", pic: "BBB"});
         expect(savepic.body.code).toEqual(0);
 
-        gameStateKeti.state = StateEnum.STARTED
-        gameStateJanski.state = StateEnum.STARTED;
+        gameStateKeti.state = StateEnum.ACTION_NAME;
+        gameStateKeti.namePic = "AAA";
+        gameStateJanski.state = StateEnum.ACTION_NAME;
+        gameStateJanski.namePic = "AAA";
+        gameStateJanski.myTurn = true;
+
+        // Check and fix permutations before checking the game
+        const permutations = await Game.findOne({code}).lean(true);
+        expect((permutations as any).permutation.sort()).toEqual([0, 1]);
+        await Game.updateOne({code}, {$set: {permutation: [0, 1]}});
 
         await checkGame();
     });

@@ -7,7 +7,7 @@ export class GameService {
     public async newGame(user: string): Promise<Response<GeneratedGameCode>> {
         const code = randomString(4);
         const word = await this.getNonexistentWord(code);
-        const game = new Game({code, owner: user, players: [{name: user, word}], state: "created"});
+        const game = new Game({code, owner: user, players: [{name: user, word, waiting: true}], state: "created"});
         await game.save();
         return ResponseOk({code});
     }
@@ -31,6 +31,14 @@ export class GameService {
             word: game.players.find((e) => e.name === user)?.word
         };
 
+        if (game.state === StateEnum.ACTION_NAME) {
+            const turnId = game.permutation[game.turn];
+            ret.namePic = game.players[turnId].pic;
+            if (game.players[turnId].name === user) {
+                ret.myTurn = true;
+            }
+        }
+
         return ResponseOk(ret);
     }
 
@@ -50,7 +58,7 @@ export class GameService {
     }
 
     public async savePic(code: string, user: string, pic: string): Promise<Response<null>> {
-        const game = await Game.findOne({code}, {"state": 1});
+        const game = await Game.findOne({code}, {"state": 1, "players": "1"});
         if (!game) {
             return ResponseFail(-1);
         }
@@ -62,7 +70,8 @@ export class GameService {
         await Game.updateOne({code, players: {$elemMatch: {name: user}}}, {$set: {"players.$.pic": pic, "players.$.waiting": false}});
 
         if ((await Game.find({code, "players.waiting": true})).length === 0) {
-            await Game.updateOne({code}, {$set: {state: "started"}});
+            const count = game.get("players").length;
+            await Game.updateOne({code}, {$set: {state: "action_name", turn: 0, permutation: this.randomPermutation(count)}});
         }
 
         return ResponseOk(null);
@@ -78,6 +87,19 @@ export class GameService {
         } while ((await Game.find({"$and": [{code}, {"players.word": word}]})).length > 0);
 
         return word;
+    }
+
+    private randomPermutation(n: number) {
+        const result = new Array(n)
+        result[0] = 0
+        for(let i = 1; i < n; ++i) {
+            const idx = (Math.random()*(i+1))|0
+            if(idx < i) {
+                result[i] = result[idx]
+            }
+            result[idx] = i
+        }
+        return result
     }
 
     public async startGame(code: string, user: string): Promise<Response<null>> {
@@ -107,4 +129,6 @@ export interface GameResponse {
     }>;
     state: StateEnum;
     word?: string;
+    myTurn?: boolean;
+    namePic?: string;
 };
