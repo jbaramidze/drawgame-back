@@ -53,6 +53,18 @@ export class GameRouter {
                 res.json(await this.gameService.savePic(req.params.code, req.body.user, req.body.pic));
             });
 
+        this.router.post("/:code/pickWord",
+            [body('user').isString().notEmpty(),
+                body('word').isString().notEmpty()],
+            // @ts-ignore
+            async (req, res) => {
+                if (!this.validate(req, res)) {
+                    return;
+                }
+
+                res.json(await this.gameService.pickWord(req.params.code, req.body.user, req.body.word));
+            });
+
         this.router.post("/:code/start",
             [body("user").isString().notEmpty()],
             // @ts-ignore

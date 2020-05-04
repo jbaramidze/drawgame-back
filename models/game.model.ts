@@ -14,7 +14,16 @@ var gameSchema = new mongoose.Schema({
         enum: ["created", "waiting_for_initial_pic", "action_name", "action_choose", "action_scores", "finished"],
     },
     permutation: [Number],
-    turn: Number
+    stages: [{
+        words: [{
+            player: String,
+            word: String
+        }],
+        guesses: [{
+            player: String,
+            guess: Number
+        }]
+    }]
 }, {timestamps: true});
 
 export default mongoose.model('game', gameSchema);

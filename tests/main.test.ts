@@ -105,5 +105,27 @@ describe('Post Endpoints', () => {
         await Game.updateOne({code}, {$set: {permutation: [0, 1]}});
 
         await checkGame();
+
+        // players: [{janski, w1}, {keti, w2}]
+        // permutation: [0, 1]
+
+        // Keti gives a name
+        const picName = await request(app).post("/game/" + code + "/pickWord").send({user: "keti", word: "ww1"});
+        expect(picName.body.code).toEqual(0);
+
+        gameStateKeti.state = StateEnum.ACTION_CHOOSE;
+        gameStateJanski.state = StateEnum.ACTION_CHOOSE;
+        delete gameStateKeti.namePic;
+        delete gameStateJanski.namePic;
+        gameStateJanski.chooseWord = expect.arrayContaining(["w1", "ww1"]);
+        gameStateKeti.chooseWord = expect.arrayContaining(["w1", "ww1"]);
+
+        // double check sizes
+        let game = await request(app).get("/game/" + code + "?user=janski").send();
+        expect(game.body.data.chooseWord.length).toEqual(2);
+        game = await request(app).get("/game/" + code + "?user=keti").send();
+        expect(game.body.data.chooseWord.length).toEqual(2);
+
+        await checkGame();
     });
 });
