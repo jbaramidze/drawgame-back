@@ -7,12 +7,12 @@ const app = require('../server');
 
 describe('Post Endpoints', () => {
     beforeAll(async () => {
-        await mongoose.connect("mongodb://localhost:27017/drawfulTest", {useNewUrlParser: true, useUnifiedTopology: true})
+        await mongoose.connect("mongodb://localhost:27099/drawfulTest", {useNewUrlParser: true, useUnifiedTopology: true})
     });
 
     beforeEach(async () => {
         for (const collection in mongoose.connection.collections) {
-            mongoose.connection.collections[collection].remove(function() {});
+            mongoose.connection.collections[collection].deleteMany({});
         }
     });
 
@@ -115,8 +115,6 @@ describe('Post Endpoints', () => {
 
         gameStateKeti.state = StateEnum.ACTION_CHOOSE;
         gameStateJanski.state = StateEnum.ACTION_CHOOSE;
-        delete gameStateKeti.namePic;
-        delete gameStateJanski.namePic;
         gameStateJanski.chooseWord = expect.arrayContaining(["w1", "ww1"]);
         gameStateKeti.chooseWord = expect.arrayContaining(["w1", "ww1"]);
 

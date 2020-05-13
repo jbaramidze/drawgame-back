@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 const app = require("./server");
 
-mongoose.connect("mongodb://localhost:27017/drawful", {useNewUrlParser: true, useUnifiedTopology: true})
+mongoose.connect("mongodb://localhost:27099/drawful", {useNewUrlParser: true, useUnifiedTopology: true})
     .catch((e) => {
         console.log("ERROR! Failed connecting to mongoose" + JSON.stringify(e));
     });

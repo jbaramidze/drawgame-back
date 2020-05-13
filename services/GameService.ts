@@ -25,18 +25,21 @@ export class GameService {
         };
 
         if (game.state === StateEnum.ACTION_NAME) {
-            const turnId = game.permutation[game.stages.length - 1];
+            const currentStage = game.stages.length - 1;
+            const turnId = game.permutation[currentStage];
             ret.namePic = game.players[turnId].pic;
             if (game.players[turnId].name === user) {
                 ret.myTurn = true;
             }
         } else if (game.state === StateEnum.ACTION_CHOOSE) {
-            const turnId = game.permutation[game.stages.length - 1];
+            const currentStage = game.stages.length - 1;
+            const turnId = game.permutation[currentStage];
+            ret.namePic = game.players[turnId].pic;
             if (game.players[turnId].name === user) {
                 ret.myTurn = true;
             }
             const words = [game.players[turnId].word];
-            for (const word of game.stages[game.stages.length - 1].words) {
+            for (const word of game.stages[currentStage].words) {
                 words.push(word.word);
             }
             ret.chooseWord = words.sort(() => Math.random() - 0.5);

@@ -41,6 +41,17 @@ export class GameRouter {
                 res.json(await this.gameService.joinGame(req.params.code, req.body.user));
             });
 
+        this.router.post("/:code/start",
+            [body("user").isString().notEmpty()],
+            // @ts-ignore
+            async (req, res) => {
+                if (!this.validate(req, res)) {
+                    return;
+                }
+
+                res.json(await this.gameService.startGame(req.params.code, req.body.user));
+            });
+
         this.router.post("/:code/1/savepic",
             [body('user').isString().notEmpty(),
                       body('pic').isString().notEmpty()],
@@ -63,17 +74,6 @@ export class GameRouter {
                 }
 
                 res.json(await this.gameService.pickWord(req.params.code, req.body.user, req.body.word));
-            });
-
-        this.router.post("/:code/start",
-            [body("user").isString().notEmpty()],
-            // @ts-ignore
-            async (req, res) => {
-                if (!this.validate(req, res)) {
-                    return;
-                }
-
-                res.json(await this.gameService.startGame(req.params.code, req.body.user));
             });
     }
 
