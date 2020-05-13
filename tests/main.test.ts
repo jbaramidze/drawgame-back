@@ -108,7 +108,7 @@ describe('Post Endpoints', () => {
 
         // players: [{janski, w1}, {keti, w2}]
         // permutation: [0, 1]
-
+        
         // Keti gives a name
         const picName = await request(app).post("/game/" + code + "/pickWord").send({user: "keti", word: "ww1"});
         expect(picName.body.code).toEqual(0);

@@ -1,9 +1,12 @@
 import {randomString} from "../utils/other";
 import Game, {StateEnum} from "../models/game.model";
-import Word from "../models/word.model";
-import {ResponseOk, Response, ResponseFail} from "../utils/Response";
+import {Response, ResponseFail, ResponseOk} from "../utils/Response";
+import {GameServiceHelpers} from "./GameServiceHelpers";
 
 export class GameService {
+
+    constructor(private readonly helper: GameServiceHelpers) {
+    }
 
     public async getGame(code: string, user: string): Promise<Response<GameResponse>> {
         const gameDocument = await Game.findOne({code});
@@ -25,24 +28,30 @@ export class GameService {
         };
 
         if (game.state === StateEnum.ACTION_NAME) {
-            const currentStage = game.stages.length - 1;
-            const turnId = game.permutation[currentStage];
+            const turnId = game.permutation[game.stage];
             ret.namePic = game.players[turnId].pic;
             if (game.players[turnId].name === user) {
                 ret.myTurn = true;
             }
         } else if (game.state === StateEnum.ACTION_CHOOSE) {
-            const currentStage = game.stages.length - 1;
-            const turnId = game.permutation[currentStage];
+            const turnId = game.permutation[game.stage];
             ret.namePic = game.players[turnId].pic;
             if (game.players[turnId].name === user) {
                 ret.myTurn = true;
             }
-            const words = [game.players[turnId].word];
-            for (const word of game.stages[currentStage].words) {
-                words.push(word.word);
-            }
-            ret.chooseWord = words.sort(() => Math.random() - 0.5);
+
+            ret.chooseWord = [...(await Game.aggregate([
+                {$match: {code}},
+                {$unwind: "$players"},
+                {$group: {
+                    _id:  1,
+                    words: {
+                        $push: "$players.stage.chosen_word"
+                    }
+                }}
+                ]
+            ))[0].words, game.players[turnId].word]
+                .sort(() => Math.random() - 0.5);
         }
 
         return ResponseOk(ret);
@@ -51,8 +60,8 @@ export class GameService {
     // state:none -> state:created
     public async newGame(user: string): Promise<Response<GeneratedGameCode>> {
         const code = randomString(4);
-        const word = await this.getNonexistentWord(code);
-        const game = new Game({code, owner: user, players: [{name: user, word, waiting: true}], state: "created"});
+        const word = await this.helper.getNonexistentWord(code);
+        const game = new Game({code, owner: user, stage: 0, players: [this.getPlayer(user, word)], state: "created"});
         await game.save();
         return ResponseOk({code});
     }
@@ -68,9 +77,18 @@ export class GameService {
             return ResponseFail(-2);
         }
 
-        const word = await this.getNonexistentWord(code);
-        await Game.updateOne({code}, {$push: {players: {name: user, word, waiting: true}}});
+        const word = await this.helper.getNonexistentWord(code);
+        await Game.updateOne({code}, {$push: {players: this.getPlayer(user, word)}});
         return ResponseOk(null);
+    }
+
+    private getPlayer(user: string, word: string) {
+        return {
+            name: user,
+            word,
+            waiting_for_action: false,
+            score: 0
+        };
     }
 
     // state:created -> state:waiting_for_initial_pic
@@ -84,7 +102,10 @@ export class GameService {
             return ResponseFail(-2);
         }
 
-        await Game.updateOne({code}, {$set: {state: "waiting_for_initial_pic"}});
+        await Game.updateOne({code}, {$set: {
+            state: "waiting_for_initial_pic",
+            "players.$[].waiting_for_action": true
+        }});
         return ResponseOk(null);
     }
 
@@ -99,13 +120,8 @@ export class GameService {
             return ResponseFail(-2);
         }
 
-        await Game.updateOne({code, players: {$elemMatch: {name: user}}}, {$set: {"players.$.pic": pic, "players.$.waiting": false}});
-
-        if ((await Game.find({code, "players.waiting": true})).length === 0) {
-            const count = game.get("players").length;
-            await Game.updateOne({code}, {$set: {state: "action_name", stages: [{words: [], guesses: []}], permutation: this.randomPermutation(count)}});
-        }
-
+        await Game.updateOne({code, players: {$elemMatch: {name: user}}}, {$set: {"players.$.pic": pic, "players.$.waiting_for_action": false}});
+        await this.helper.checkAndAdvanceState(code, game);
         return ResponseOk(null);
     }
 
@@ -120,41 +136,15 @@ export class GameService {
             return ResponseFail(-2);
         }
 
-        // FIXME: make sure that player has not sent word already
-        let total = game.get("stages").length;
-        game.get("stages")[total - 1].words.push({player, word});
-        await game.save();
-
-        // All - 1 should vote for this word.
-        if (total === game.get("players").length - 1) {
-            await Game.updateOne({code}, {$set: {state: "action_choose"}});
-        }
-        return ResponseOk(null);
-    }
-
-    private async getNonexistentWord(code: string) {
-        const count = await Word.countDocuments();
-        let word;
-        do {
-            const index = Math.floor(Math.random() * count);
-            const words = await Word.find();
-            word = words[index].get("word");
-        } while ((await Game.find({"$and": [{code}, {"players.word": word}]})).length > 0);
-
-        return word;
-    }
-
-    private randomPermutation(n: number) {
-        const result = new Array(n)
-        result[0] = 0
-        for(let i = 1; i < n; ++i) {
-            const idx = (Math.random()*(i+1))|0
-            if(idx < i) {
-                result[i] = result[idx]
+        await Game.updateOne({code, players: {$elemMatch: {name: player}}}, {
+            $set: {
+                "players.$.stage.chosen_word": word,
+                "players.$.waiting_for_action": false
             }
-            result[idx] = i
-        }
-        return result
+        });
+
+        await this.helper.checkAndAdvanceState(code, game);
+        return ResponseOk(null);
     }
 }
 
