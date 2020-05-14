@@ -16,10 +16,25 @@ export class GameServiceHelpers {
                     "players.$[].waiting_for_action": true
                 }});
 
-            // Can we do in 1 go?
+            // FIXME: Can we do in 1 go?
             await Game.updateOne({code}, {$set: {"players.0.waiting_for_action": false}});
         } else if (game.get("state") === "action_name") {
-            await Game.updateOne({code}, {$set: {state: "action_choose"}});
+            await Game.updateOne({code}, {$set: {
+                state: "action_choose",
+                "players.$[].waiting_for_action": true
+            }});
+
+            await Game.updateOne({code}, {$set: {"players.0.waiting_for_action": false}});
+        } else if (game.get("state") === "action_choose") {
+            // NEXT: get stage info, copy to new collection, update points before this.
+            await Game.updateOne({code}, {
+                $set: {
+                    state: "action_scores"
+                },
+                $unset: {
+                    "players.$[].stage": ""
+                }
+            });
         }
     }
 

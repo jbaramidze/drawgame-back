@@ -75,6 +75,18 @@ export class GameRouter {
 
                 res.json(await this.gameService.pickWord(req.params.code, req.body.user, req.body.word));
             });
+
+        this.router.post("/:code/guessWord",
+            [body('user').isString().notEmpty(),
+                body('word').isString().notEmpty()],
+            // @ts-ignore
+            async (req, res) => {
+                if (!this.validate(req, res)) {
+                    return;
+                }
+
+                res.json(await this.gameService.guessWord(req.params.code, req.body.user, req.body.word));
+            });
     }
 
     private validate(req: any, res: any) {
