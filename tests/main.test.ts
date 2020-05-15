@@ -1,6 +1,5 @@
-import {GameResponse} from "../services/GameService";
 import Game, {StateEnum} from "../models/game.model";
-import {POINTS_CORRECT_GUESS, POINTS_FOR_MISLEADING_SOMEONE, POINTS_WIN_ON_YOUR_TURN} from "../server";
+import {POINTS_CORRECT_GUESS, POINTS_FOR_MISLEADING_SOMEONE, POINTS_WIN_ON_YOUR_TURN} from "../index";
 
 const mongoose = require('mongoose');
 const request = require('supertest');
@@ -57,6 +56,18 @@ describe('Post Endpoints', () => {
         await checkGameKatu();
     }
 
+    function setState(state: StateEnum) {
+        gameStateKeti.state = state;
+        gameStateJanski.state = state;
+        gameStateKatu.state = state;
+    }
+
+    function setWaiting(waiting: string[]) {
+        gameStateKeti.waitingFor = waiting;
+        gameStateJanski.waitingFor = waiting;
+        gameStateKatu.waitingFor = waiting;
+    }
+
     it('Test main flow', async () => {
         await addWord("w1", "ge");
 
@@ -66,7 +77,7 @@ describe('Post Endpoints', () => {
 
         code = createGame.body.data.code;
 
-        gameStateJanski = {code, owner: "janski", players: [{name: "janski"}], state: StateEnum.CREATED, word: "w1"};
+        gameStateJanski = {code, owner: "janski", players: [{name: "janski", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w1"};
         await checkGameJanski();
 
         await addWord("w2", "ge");
@@ -75,8 +86,8 @@ describe('Post Endpoints', () => {
         expect((await request(app).post("/game/" + code + "/join").send({user: "keti"})).body.code)
             .toEqual(0);
 
-        gameStateKeti = {code, owner: "janski", players: [{name: "janski"}, {name: "keti"}], state: StateEnum.CREATED, word: "w2"};
-        gameStateJanski.players.push({name: "keti"});
+        gameStateKeti = {code, owner: "janski", players: [{name: "janski", score: 0}, {name: "keti", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w2"};
+        gameStateJanski.players.push({name: "keti", score: 0});
 
         await checkGameKeti();
 
@@ -89,9 +100,9 @@ describe('Post Endpoints', () => {
         expect((await request(app).post("/game/" + code + "/join").send({user: "katu"})).body.code)
             .toEqual(0);
 
-        gameStateKatu = {code, owner: "janski", players: [{name: "janski"}, {name: "keti"}, {name: "katu"}], state: StateEnum.CREATED, word: "w3"};
-        gameStateKeti.players.push({name: "katu"});
-        gameStateJanski.players.push({name: "katu"});
+        gameStateKatu = {code, owner: "janski", players: [{name: "janski", score: 0}, {name: "keti", score: 0}, {name: "katu", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w3"};
+        gameStateKeti.players.push({name: "katu", score: 0});
+        gameStateJanski.players.push({name: "katu", score: 0});
 
         await checkGame();
 
@@ -103,17 +114,15 @@ describe('Post Endpoints', () => {
         expect((await request(app).post("/game/" + code + "/start").send({user: "janski"})).body.code)
             .toEqual(0);
 
-        gameStateKeti.state = StateEnum.WAITING_FOR_INITIAL_PIC;
-        gameStateJanski.state = StateEnum.WAITING_FOR_INITIAL_PIC;
-        gameStateKatu.state = StateEnum.WAITING_FOR_INITIAL_PIC;
-
+        setState(StateEnum.WAITING_FOR_INITIAL_PIC);
+        setWaiting(["janski", "keti", "katu"])
         await checkGame();
 
         // Janski saves a pic
         expect((await request(app).post("/game/" + code + "/1/savepic").send({user: "janski", pic: "AAA"})).body.code)
             .toEqual(0);
 
-        // Nothing changes
+        setWaiting(["keti", "katu"])
         await checkGame();
 
         // Nonexistent users cannot save a pic
@@ -125,25 +134,28 @@ describe('Post Endpoints', () => {
             .toEqual(0);
 
         // Nothing changes
+        setWaiting(["katu"])
         await checkGame();
 
         // Katu saves a pic
         expect((await request(app).post("/game/" + code + "/1/savepic").send({user: "katu", pic: "CCC"})).body.code)
             .toEqual(0);
 
-        gameStateKeti.state = StateEnum.ACTION_NAME;
+        setState(StateEnum.ACTION_NAME);
         gameStateKeti.namePic = "AAA";
-        gameStateJanski.state = StateEnum.ACTION_NAME;
         gameStateJanski.namePic = "AAA";
-        gameStateKatu.state = StateEnum.ACTION_NAME;
         gameStateKatu.namePic = "AAA";
         gameStateJanski.myTurn = true;
+        gameStateJanski.remainingSec = expect.any(Number);
+        gameStateKeti.remainingSec = expect.any(Number);
+        gameStateKatu.remainingSec = expect.any(Number);
 
         // Check and fix permutations before checking the game
         const permutations = await Game.findOne({code}).lean(true);
         expect((permutations as any).permutation.sort()).toEqual([0, 1, 2]);
         await Game.updateOne({code}, {$set: {permutation: [0, 1, 2]}});
 
+        setWaiting(["keti", "katu"]);
         await checkGame();
 
         // players: [{janski, w1}, {keti, w2}]
@@ -162,18 +174,12 @@ describe('Post Endpoints', () => {
             .toEqual(0);
 
         // Nothing changes
+        setWaiting(["katu"]);
         await checkGame();
 
         // Katu gives a name
         expect((await request(app).post("/game/" + code + "/pickWord").send({user: "katu", word: "ww2"})).body.code)
             .toEqual(0);
-
-        gameStateKeti.state = StateEnum.ACTION_CHOOSE;
-        gameStateJanski.state = StateEnum.ACTION_CHOOSE;
-        gameStateKatu.state = StateEnum.ACTION_CHOOSE;
-        gameStateJanski.chooseWord = expect.arrayContaining(["w1", "ww1", "ww2"]);
-        gameStateKeti.chooseWord = expect.arrayContaining(["w1", "ww1", "ww2"]);
-        gameStateKatu.chooseWord = expect.arrayContaining(["w1", "ww1", "ww2"]);
 
         // double check sizes
         let game = await request(app).get("/game/" + code + "?user=janski").send();
@@ -183,6 +189,11 @@ describe('Post Endpoints', () => {
         game = await request(app).get("/game/" + code + "?user=katu").send();
         expect(game.body.data.chooseWord.length).toEqual(3);
 
+        gameStateJanski.chooseWord = expect.arrayContaining(["w1", "ww1", "ww2"]);
+        gameStateKeti.chooseWord = expect.arrayContaining(["w1", "ww1", "ww2"]);
+        gameStateKatu.chooseWord = expect.arrayContaining(["w1", "ww1", "ww2"]);
+        setState(StateEnum.ACTION_CHOOSE);
+        setWaiting(["keti", "katu"]);
         await checkGame();
 
         // Zhani cannot guess the word
@@ -206,25 +217,35 @@ describe('Post Endpoints', () => {
             .toEqual(0);
 
         // Nothing changes
+        setWaiting(["katu"]);
         await checkGame();
 
         // Katu guesses Keti's word
         expect((await request(app).post("/game/" + code + "/guessWord").send({user: "katu", word: "ww1"})).body.code)
             .toEqual(0);
 
-        gameStateKeti.state = StateEnum.ACTION_SCORES;
-        gameStateJanski.state = StateEnum.ACTION_SCORES;
-        gameStateKatu.state = StateEnum.ACTION_SCORES;
-        delete gameStateKeti.word;
-        delete gameStateJanski.word;
-        delete gameStateKatu.word;
+        setState(StateEnum.ACTION_SCORES);
+        setWaiting([]);
         delete gameStateKeti.namePic;
         delete gameStateJanski.namePic;
         delete gameStateKatu.namePic;
-        gameStateJanski.points = POINTS_WIN_ON_YOUR_TURN;
-        gameStateKeti.points = POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE;
-        gameStateKatu.points = 0;
+        delete gameStateKeti.chooseWord;
+        delete gameStateJanski.chooseWord;
+        delete gameStateKatu.chooseWord;
+        delete gameStateJanski.myTurn;
+        delete gameStateKatu.myTurn;
+        delete gameStateKeti.myTurn;
 
+        const newPlayers = [
+            {name: "janski", score: POINTS_WIN_ON_YOUR_TURN},
+            {name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE},
+            {name: "katu", score: 0}
+        ];
 
+        gameStateJanski.players = newPlayers;
+        gameStateKeti.players = newPlayers;
+        gameStateKatu.players = newPlayers;
+
+        await checkGame();
     });
 });

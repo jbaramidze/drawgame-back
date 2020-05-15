@@ -2,6 +2,7 @@ import {randomString} from "../utils/other";
 import Game, {StateEnum} from "../models/game.model";
 import {Response, ResponseFail, ResponseOk} from "../utils/Response";
 import {GameServiceHelpers} from "./GameServiceHelpers";
+import {MAX_TIME_IN_ACTION_CHOOSE_SEC, MAX_TIME_IN_ACTION_NAME_SEC, MAX_TIME_IN_ACTION_SCORES_SEC} from "../index";
 
 export class GameService {
 
@@ -20,27 +21,50 @@ export class GameService {
             owner: game.owner,
             players: game.players.map((p) => {
                 return {
-                    name: p.name
+                    name: p.name,
+                    score: p.score
                 }
             }),
             state: game.state,
-            word: game.players.find((e) => e.name === user)?.word
+            word: game.players.find((e) => e.name === user)?.word,
+            waitingFor: game.players.filter((e) => e.waiting_for_action).map((e) => e.name)
         };
 
         if (game.state === StateEnum.ACTION_NAME) {
+            const remainingSec = MAX_TIME_IN_ACTION_NAME_SEC - (Date.now() - game.stageStartTime)/1000;
+            if (remainingSec < 0) {
+                await this.helper.checkAndAdvanceState(code, true);
+                return this.getGame(code, user);
+            }
+
             ret.namePic = this.helper.getCurrentTurnPic(gameDocument);
             if (this.helper.getCurrentTurnName(gameDocument) === user) {
                 ret.myTurn = true;
             }
+            ret.remainingSec = remainingSec;
         } else if (game.state === StateEnum.ACTION_CHOOSE) {
+            const remainingSec = MAX_TIME_IN_ACTION_CHOOSE_SEC - (Date.now() - game.stageStartTime)/1000;
+            if (remainingSec < 0) {
+                await this.helper.checkAndAdvanceState(code, true);
+                return this.getGame(code, user);
+            }
+
             ret.namePic = this.helper.getCurrentTurnPic(gameDocument);
             if (this.helper.getCurrentTurnName(gameDocument) === user) {
                 ret.myTurn = true;
             }
+            ret.remainingSec = remainingSec;
 
             ret.chooseWord = (await this.helper.getAllWordsToGuess(gameDocument))
                 .map((w) => w.word)
                 .sort(() => Math.random() - 0.5);
+        } else if (game.state === StateEnum.ACTION_SCORES) {
+            const remainingSec = MAX_TIME_IN_ACTION_SCORES_SEC - (Date.now() - game.stageStartTime)/1000;
+            if (remainingSec < 0) {
+                await this.helper.checkAndAdvanceState(code, true);
+                return this.getGame(code, user);
+            }
+            ret.remainingSec = remainingSec;
         }
 
         return ResponseOk(ret);
@@ -50,7 +74,7 @@ export class GameService {
     public async newGame(user: string): Promise<Response<GeneratedGameCode>> {
         const code = randomString(4);
         const word = await this.helper.getNonexistentWord(code);
-        const game = new Game({code, owner: user, stage: 0, players: [this.helper.getPlayer(user, word)], state: "created"});
+        const game = new Game({code, owner: user, stage: 0, players: [this.helper.getPlayer(user, word)], state: "created", stageStartTime: Date.now()});
         await game.save();
         return ResponseOk({code});
     }
@@ -92,6 +116,7 @@ export class GameService {
 
         await Game.updateOne({code}, {$set: {
             state: "waiting_for_initial_pic",
+            stageStartTime: Date.now(),
             "players.$[].waiting_for_action": true
         }});
         return ResponseOk(null);
@@ -199,10 +224,13 @@ export interface GameResponse {
     owner: string;
     players: Array<{
         name: string;
+        score: number;
     }>;
     state: StateEnum;
     word?: string;
-    myTurn?: boolean;
-    namePic?: string;
-    chooseWord?: string[];
+    waitingFor?: string;
+    myTurn?: boolean; // ACTION_NAME, ACTION_CHOOSE
+    namePic?: string; // ACTION_NAME, ACTION_CHOOSE
+    chooseWord?: string[]; // ACTION_CHOOSE
+    remainingSec?: number // ACTION_NAME, ACTION_CHOOSE, ACTION_SCORES
 };

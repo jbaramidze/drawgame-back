@@ -1,39 +1,42 @@
 import {MongooseDocument} from "mongoose";
-import Game from "../models/game.model";
+import Game, {StateEnum} from "../models/game.model";
 import Word from "../models/word.model";
 import Stage from "../models/stage.model";
-import {POINTS_CORRECT_GUESS, POINTS_FOR_MISLEADING_SOMEONE, POINTS_WIN_ON_YOUR_TURN} from "../server";
+import {POINTS_CORRECT_GUESS, POINTS_FOR_MISLEADING_SOMEONE, POINTS_WIN_ON_YOUR_TURN} from "../index";
 
 export class GameServiceHelpers {
-    public async checkAndAdvanceState(code: string) {
+    public async checkAndAdvanceState(code: string, force?: boolean) {
         const game = await Game.findOne({code});
-        if (game.get("players").find((p) => p.waiting_for_action)) {
+        if (!force && game.get("players").find((p) => p.waiting_for_action)) {
             return
         }
 
-        if (game.get("state") === "waiting_for_initial_pic") {
+        if (game.get("state") === StateEnum.WAITING_FOR_INITIAL_PIC) {
             const count = game.get("players").length;
             await Game.updateOne({code}, {
                 $set: {
                     state: "action_name",
+                    stageStartTime: Date.now(),
                     permutation: this.randomPermutation(count),
                     "players.$[].waiting_for_action": true
                 }
             });
 
             // FIXME: Can we do in 1 go?
+            // FIXME: 0? why 0?
             await Game.updateOne({code}, {$set: {"players.0.waiting_for_action": false}});
-        } else if (game.get("state") === "action_name") {
+        } else if (game.get("state") === StateEnum.ACTION_NAME) {
             await Game.updateOne({code}, {
                 $set: {
                     state: "action_choose",
+                    stageStartTime: Date.now(),
                     "players.$[].waiting_for_action": true
                 }
             });
 
+            // FIXME: 0? why 0?
             await Game.updateOne({code}, {$set: {"players.0.waiting_for_action": false}});
-        } else if (game.get("state") === "action_choose") {
-
+        } else if (game.get("state") === StateEnum.ACTION_CHOOSE) {
             const gameObject = game.toObject();
             const nonTurnPlayers = gameObject.players.filter((player) => player.stage);
 
@@ -97,12 +100,15 @@ export class GameServiceHelpers {
             // Change state, delete stage
             await Game.updateOne({code}, {
                 $set: {
-                    "state": "action_scores"
+                    "state": "action_scores",
+                    stageStartTime: Date.now()
                 },
                 $unset: {
                     "players.$[].stage": ""
                 }
             });
+        } else if (game.get("state") === StateEnum.ACTION_SCORES) {
+
         }
     }
 

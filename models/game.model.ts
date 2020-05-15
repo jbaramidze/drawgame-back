@@ -19,6 +19,7 @@ const gameSchema = new mongoose.Schema({
         enum: ["created", "waiting_for_initial_pic", "action_name", "action_choose", "action_scores", "finished"],
     },
     stage: Number,
+    stageStartTime: Date,
     permutation: [Number]
 }, {timestamps: true});
 
