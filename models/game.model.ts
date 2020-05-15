@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-var gameSchema = new mongoose.Schema({
+const gameSchema = new mongoose.Schema({
     code: String,
     owner: String,
     players: [{

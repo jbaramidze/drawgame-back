@@ -2,62 +2,10 @@ import {randomString} from "../utils/other";
 import Game, {StateEnum} from "../models/game.model";
 import {Response, ResponseFail, ResponseOk} from "../utils/Response";
 import {GameServiceHelpers} from "./GameServiceHelpers";
-import {MongooseDocument} from "mongoose";
 
 export class GameService {
 
     constructor(private readonly helper: GameServiceHelpers) {
-    }
-
-    private getCurrentTurnPic(game: MongooseDocument) {
-        const turnId = game.get("permutation")[game.get("stage")];
-        return game.get("players")[turnId].pic;
-    }
-
-    private getCurrentTurnName(game: MongooseDocument) {
-        const turnId = game.get("permutation")[game.get("stage")];
-        return game.get("players")[turnId].name;
-    }
-
-    private getCurrentTurnWord(game: MongooseDocument) {
-        const turnId = game.get("permutation")[game.get("stage")];
-        return game.get("players")[turnId].word;
-    }
-
-    private getAllPlayerNames(game: MongooseDocument) {
-        return game.get("players").toObject().map((v) => v.name)
-    }
-
-    private async getAllWordsToGuess(game: MongooseDocument) {
-        const others = (await Game.aggregate([
-                {$match: {code: game.get('code')}},
-                {$unwind: "$players"},
-                {$group: {
-                        _id:  1,
-                        words: {
-                            $push: {
-                                word: "$players.stage.chosen_word",
-                                owner: "$players.name"
-                            }
-                        }
-                    }}
-            ]
-        ))[0].words;
-
-        return [...(others.filter((w) => w.word)), {word: this.getCurrentTurnWord(game), owner: game.get("owner")}];
-    }
-
-    private async getAllStageWords(game: MongooseDocument) {
-        return game.get("stage")
-    }
-
-    private getPlayer(user: string, word: string) {
-        return {
-            name: user,
-            word,
-            waiting_for_action: false,
-            score: 0
-        };
     }
 
     public async getGame(code: string, user: string): Promise<Response<GameResponse>> {
@@ -80,17 +28,17 @@ export class GameService {
         };
 
         if (game.state === StateEnum.ACTION_NAME) {
-            ret.namePic = this.getCurrentTurnPic(gameDocument);
-            if (this.getCurrentTurnName(gameDocument) === user) {
+            ret.namePic = this.helper.getCurrentTurnPic(gameDocument);
+            if (this.helper.getCurrentTurnName(gameDocument) === user) {
                 ret.myTurn = true;
             }
         } else if (game.state === StateEnum.ACTION_CHOOSE) {
-            ret.namePic = this.getCurrentTurnPic(gameDocument);
-            if (this.getCurrentTurnName(gameDocument) === user) {
+            ret.namePic = this.helper.getCurrentTurnPic(gameDocument);
+            if (this.helper.getCurrentTurnName(gameDocument) === user) {
                 ret.myTurn = true;
             }
 
-            ret.chooseWord = (await this.getAllWordsToGuess(gameDocument))
+            ret.chooseWord = (await this.helper.getAllWordsToGuess(gameDocument))
                 .map((w) => w.word)
                 .sort(() => Math.random() - 0.5);
         }
@@ -102,7 +50,7 @@ export class GameService {
     public async newGame(user: string): Promise<Response<GeneratedGameCode>> {
         const code = randomString(4);
         const word = await this.helper.getNonexistentWord(code);
-        const game = new Game({code, owner: user, stage: 0, players: [this.getPlayer(user, word)], state: "created"});
+        const game = new Game({code, owner: user, stage: 0, players: [this.helper.getPlayer(user, word)], state: "created"});
         await game.save();
         return ResponseOk({code});
     }
@@ -118,12 +66,12 @@ export class GameService {
             return ResponseFail(-2);
         }
 
-        if (this.getAllPlayerNames(game).find((name) => name === user)) {
+        if (this.helper.getAllPlayerNames(game).find((name) => name === user)) {
             return ResponseFail(-3);
         }
 
         const word = await this.helper.getNonexistentWord(code);
-        await Game.updateOne({code}, {$push: {players: this.getPlayer(user, word)}});
+        await Game.updateOne({code}, {$push: {players: this.helper.getPlayer(user, word)}});
         return ResponseOk(null);
     }
 
@@ -169,7 +117,7 @@ export class GameService {
             return ResponseFail(-3);
         }
 
-        await this.helper.checkAndAdvanceState(code, game);
+        await this.helper.checkAndAdvanceState(code);
         return ResponseOk(null);
     }
 
@@ -184,7 +132,7 @@ export class GameService {
             return ResponseFail(-2);
         }
 
-        if (this.getCurrentTurnName(game) === player) {
+        if (this.helper.getCurrentTurnName(game) === player) {
             return ResponseFail(-3);
         }
 
@@ -199,7 +147,7 @@ export class GameService {
             return ResponseFail(-4);
         }
 
-        await this.helper.checkAndAdvanceState(code, game);
+        await this.helper.checkAndAdvanceState(code);
         return ResponseOk(null);
     }
 
@@ -214,15 +162,15 @@ export class GameService {
             return ResponseFail(-2);
         }
 
-        if (this.getCurrentTurnName(game) === player) {
+        if (this.helper.getCurrentTurnName(game) === player) {
             return ResponseFail(-3);
         }
 
-        if (!(await this.getAllWordsToGuess(game)).find((w) => w.word === word)) {
+        if (!(await this.helper.getAllWordsToGuess(game)).find((w) => w.word === word)) {
             return ResponseFail(-4);
         }
 
-        if ((await this.getAllWordsToGuess(game)).find((w) => w.word === word).owner === player) {
+        if ((await this.helper.getAllWordsToGuess(game)).find((w) => w.word === word).owner === player) {
             return ResponseFail(-6);
         }
 
@@ -237,7 +185,7 @@ export class GameService {
             return ResponseFail(-5);
         }
 
-        await this.helper.checkAndAdvanceState(code, game);
+        await this.helper.checkAndAdvanceState(code);
         return ResponseOk(null);
     }
 }

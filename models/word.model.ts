@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-var wordSchema = new mongoose.Schema({
+const wordSchema = new mongoose.Schema({
     word: String,
     lang: String
 }, {timestamps: true});
