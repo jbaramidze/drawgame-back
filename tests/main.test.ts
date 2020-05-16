@@ -75,6 +75,18 @@ describe('Post Endpoints', () => {
         gameStateKatu.state = state;
     }
 
+    function setGuesses(guesses: any) {
+        gameStateKeti.guesses = guesses;
+        gameStateJanski.guesses = guesses;
+        gameStateKatu.guesses = guesses;
+    }
+
+    function clearGuesses() {
+        delete gameStateKeti.guesses;
+        delete gameStateJanski.guesses;
+        delete gameStateKatu.guesses;
+    }
+
     function setNamePic(pic: string) {
         gameStateKeti.namePic = pic;
         gameStateJanski.namePic = pic;
@@ -255,6 +267,8 @@ describe('Post Endpoints', () => {
             .toEqual(0);
 
         setState(StateEnum.ACTION_SCORES);
+        setGuesses([{chosen_word: "ww1", guessed_word: "w1", name: "keti"},
+            {chosen_word: "ww2", guessed_word: "ww1", name: "katu"}]);
         setWaiting([]);
         finishStage(POINTS_WIN_ON_YOUR_TURN, POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE, 0);
         await checkGame();
@@ -272,6 +286,7 @@ describe('Post Endpoints', () => {
          **************************************/
 
         setState(StateEnum.ACTION_NAME);
+        clearGuesses();
         setWaiting(["janski", "katu"]);
         setNamePic("BBB")
         gameStateKeti.myTurn = true;
@@ -313,6 +328,8 @@ describe('Post Endpoints', () => {
             .toEqual(0);
 
         setState(StateEnum.ACTION_SCORES);
+        setGuesses([{chosen_word: "ww11", guessed_word: "ww11", name: "janski"},
+            {chosen_word: "ww11", guessed_word: "ww11", name: "katu"}]);
         setWaiting([]);
         finishStage(POINTS_FOR_MISLEADING_SOMEONE, 0, POINTS_FOR_MISLEADING_SOMEONE);
         await checkGame();
@@ -327,6 +344,7 @@ describe('Post Endpoints', () => {
          **************************************/
 
         setState(StateEnum.ACTION_NAME);
+        clearGuesses();
         setWaiting(["janski", "keti"]);
         setNamePic("CCC")
         gameStateKatu.myTurn = true;
@@ -362,6 +380,8 @@ describe('Post Endpoints', () => {
             .toEqual(0);
 
         setState(StateEnum.ACTION_SCORES);
+        setGuesses([{chosen_word: "ww22", guessed_word: "w3", name: "janski"},
+            {chosen_word: "w3", guessed_word: "w3", name: "keti"}]);
         setWaiting([]);
         finishStage(POINTS_CORRECT_GUESS, POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE, 0);
         await checkGame();
@@ -370,6 +390,7 @@ describe('Post Endpoints', () => {
         await Game.updateOne({}, {$set: {stageStartTime: Date.now() - 900*1000}});
 
         setState(StateEnum.FINISHED);
+        clearGuesses();
         delete gameStateJanski.remainingSec;
         delete gameStateKeti.remainingSec;
         delete gameStateKatu.remainingSec;

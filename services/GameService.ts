@@ -1,5 +1,6 @@
 import {randomString} from "../utils/other";
 import Game, {StateEnum} from "../models/game.model";
+import Stage from "../models/stage.model";
 import {Response, ResponseFail, ResponseOk} from "../utils/Response";
 import {GameServiceHelpers} from "./GameServiceHelpers";
 import {MAX_TIME_IN_ACTION_CHOOSE_SEC, MAX_TIME_IN_ACTION_NAME_SEC, MAX_TIME_IN_ACTION_SCORES_SEC} from "../index";
@@ -64,6 +65,16 @@ export class GameService {
                 await this.helper.checkAndAdvanceState(gameDocument, true);
                 return this.getGame(code, user);
             }
+            const lastStage = (await Stage.find({game: game._id}).sort({stage: -1}));
+            ret.guesses = lastStage[0].get("guesses")
+                .filter((g) => g.chosen_word)
+                .map((g) => {
+                    return {
+                        name: g.name,
+                        chosen_word: g.chosen_word,
+                        guessed_word: g.guessed_word
+                    }
+                });
             ret.remainingSec = remainingSec;
         }
 
@@ -239,4 +250,9 @@ export interface GameResponse {
     namePic?: string; // ACTION_NAME, ACTION_CHOOSE
     chooseWord?: string[]; // ACTION_CHOOSE
     remainingSec?: number // ACTION_NAME, ACTION_CHOOSE, ACTION_SCORES
+    guesses?: Array<{  // ACTION_SCORES
+        name: string;
+        chosen_word: string;
+        guessed_word: string;
+    }>;
 };

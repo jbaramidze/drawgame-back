@@ -94,7 +94,7 @@ export class GameServiceHelpers {
     private async createStage(game: MongooseDocument, scores: Map<string, number>) {
         const nonTurnPlayers = game.get("players").filter((player) => player.stage);
         const stage = new Stage({
-            game: game.get("._id"),
+            game: game.get("_id"),
             stage: game.get("stage"),
             name: this.getCurrentTurnName(game),
             word: this.getCurrentTurnWord(game),
