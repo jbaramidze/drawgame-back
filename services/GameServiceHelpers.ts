@@ -5,17 +5,16 @@ import Stage from "../models/stage.model";
 import {POINTS_CORRECT_GUESS, POINTS_FOR_MISLEADING_SOMEONE, POINTS_WIN_ON_YOUR_TURN} from "../index";
 
 export class GameServiceHelpers {
-    public async checkAndAdvanceState(code: string, force?: boolean) {
-        const game = await Game.findOne({code});
+    public async checkAndAdvanceState(game: MongooseDocument, force?: boolean) {
         if (!force && game.get("players").find((p) => p.waiting_for_action)) {
             return
         }
 
         if (game.get("state") === StateEnum.WAITING_FOR_INITIAL_PIC) {
             const count = game.get("players").length;
-            await Game.updateOne({code}, {
+            await Game.updateOne({code: game.get("code")}, {
                 $set: {
-                    state: "action_name",
+                    state: StateEnum.ACTION_NAME,
                     stageStartTime: Date.now(),
                     permutation: this.randomPermutation(count),
                     "players.$[].waiting_for_action": true
@@ -23,74 +22,25 @@ export class GameServiceHelpers {
             });
 
             // FIXME: Can we do in 1 go?
-            // FIXME: 0? why 0?
-            await Game.updateOne({code}, {$set: {"players.0.waiting_for_action": false}});
+            await Game.updateOne({code: game.get("code")}, {$set: {"players.0.waiting_for_action": false}});
         } else if (game.get("state") === StateEnum.ACTION_NAME) {
-            await Game.updateOne({code}, {
+            await Game.updateOne({code: game.get("code")}, {
                 $set: {
-                    state: "action_choose",
+                    state: StateEnum.ACTION_CHOOSE,
                     stageStartTime: Date.now(),
                     "players.$[].waiting_for_action": true
                 }
             });
 
-            // FIXME: 0? why 0?
-            await Game.updateOne({code}, {$set: {"players.0.waiting_for_action": false}});
+            const key = `players.${this.getCurrentTurnId(game)}.waiting_for_action`;
+            await Game.updateOne({code: game.get("code")}, {$set: {[key]: false}});
         } else if (game.get("state") === StateEnum.ACTION_CHOOSE) {
-            const gameObject = game.toObject();
-            const nonTurnPlayers = gameObject.players.filter((player) => player.stage);
+            const scores = this.getScoresMap(game);
+            await this.createStage(game, scores);
 
-            // update scores of the guy whose turn it was
-            const correctGuessers = this.getCorrectGuessers(game);
-            const totalPlayers = this.getAllPlayersCount(game);
-            const currentTurnName = this.getCurrentTurnName(game);
-            const currentTurnWord = this.getCurrentTurnWord(game);
-            let scoreOfTurnPlayer = 0;
-            if (correctGuessers !== 0 && correctGuessers !== totalPlayers) {
-                scoreOfTurnPlayer = POINTS_WIN_ON_YOUR_TURN;
-            }
-
-            // update scores of other guys
-            const map = new Map<string, number>();
-            this.getAllPlayerNames(game)
-                .filter((p) => p !== currentTurnName)
-                .forEach((p) => map.set(p, 0))
-
-            nonTurnPlayers.forEach((p) => {
-                if (p.stage.guessed_word === currentTurnWord) {
-                    map.set(p.name, map.get(p.name) + POINTS_CORRECT_GUESS);
-                } else {
-                    const lier = nonTurnPlayers.find((i) => i.stage.chosen_word === p.stage.guessed_word).name;
-                    map.set(lier, map.get(lier) + POINTS_FOR_MISLEADING_SOMEONE);
-                }
-            });
-
-            const stage = new Stage({
-                game: gameObject._id,
-                stage: gameObject.stage,
-                name: this.getCurrentTurnName(game),
-                word: this.getCurrentTurnWord(game),
-                pic: this.getCurrentTurnPic(game),
-                score: scoreOfTurnPlayer,
-                guesses: nonTurnPlayers.map((player) => {
-                    return {
-                        name: player.name,
-                        chosen_word: player.stage.chosen_word,
-                        guessed_word: player.stage.guessed_word,
-                        score: map.get(player.name)
-                    };
-                })
-            });
-            await stage.save();
-
-            await Game.updateOne({code, players: {$elemMatch: {name: currentTurnName}}}, {
-                $inc: {
-                    "players.$.score": scoreOfTurnPlayer
-                }
-            });
-
-            for (const [k, v] of map.entries()) {
-                await Game.updateOne({code, players: {$elemMatch: {name: k}}}, {
+            // Update scores
+            for (const [k, v] of scores.entries()) {
+                await Game.updateOne({code: game.get("code"), players: {$elemMatch: {name: k}}}, {
                     $inc: {
                         "players.$.score": v
                     }
@@ -98,9 +48,9 @@ export class GameServiceHelpers {
             }
 
             // Change state, delete stage
-            await Game.updateOne({code}, {
+            await Game.updateOne({code: game.get("code")}, {
                 $set: {
-                    "state": "action_scores",
+                    "state": StateEnum.ACTION_SCORES,
                     stageStartTime: Date.now()
                 },
                 $unset: {
@@ -108,8 +58,92 @@ export class GameServiceHelpers {
                 }
             });
         } else if (game.get("state") === StateEnum.ACTION_SCORES) {
+            const stage = this.getCurrentStage(game);
+            const playersNum = this.getAllPlayersCount(game);
 
+            if (stage + 1 == playersNum) {
+                await Game.updateOne({code: game.get("code")}, {
+                    $set: {
+                        state: StateEnum.FINISHED
+                    }
+                });
+
+                return game;
+            }
+
+
+            await Game.updateOne({code: game.get("code")}, {
+                $set: {
+                    state: StateEnum.ACTION_NAME,
+                    stageStartTime: Date.now(),
+                    "players.$[].waiting_for_action": true
+                },
+                $inc: {
+                    stage: 1
+                }
+            });
+            game = await Game.findOne({code: game.get("code")});
+            const key = `players.${this.getCurrentTurnId(game)}.waiting_for_action`;
+            await Game.updateOne({code: game.get("code")}, {$set: {[key]: false}});
         }
+
+        game = await Game.findOne({code: game.get("code")});
+        return game;
+    }
+
+    private async createStage(game: MongooseDocument, scores: Map<string, number>) {
+        const nonTurnPlayers = game.get("players").filter((player) => player.stage);
+        const stage = new Stage({
+            game: game.get("._id"),
+            stage: game.get("stage"),
+            name: this.getCurrentTurnName(game),
+            word: this.getCurrentTurnWord(game),
+            pic: this.getCurrentTurnPic(game),
+            score: scores.get(this.getCurrentTurnName(game)),
+            guesses: nonTurnPlayers.map((player) => {
+                return {
+                    name: player.name,
+                    chosen_word: player.stage.chosen_word,
+                    guessed_word: player.stage.guessed_word,
+                    score: scores.get(player.name)
+                };
+            })
+        });
+        await stage.save();
+    }
+
+    private getScoresMap(game: MongooseDocument) {
+        // update scores of the guy whose turn it was
+        const correctGuessers = this.getCorrectGuessers(game);
+        const totalPlayers = this.getAllPlayersCount(game);
+        const currentTurnName = this.getCurrentTurnName(game);
+        const currentTurnWord = this.getCurrentTurnWord(game);
+        let scoreOfTurnPlayer = 0;
+        if (correctGuessers !== 0 && correctGuessers !== totalPlayers - 1) {
+            scoreOfTurnPlayer = POINTS_WIN_ON_YOUR_TURN;
+        }
+
+        // update scores of other guys
+        const map = new Map<string, number>();
+        this.getAllPlayerNames(game).forEach((p) => map.set(p, 0))
+
+        const nonTurnPlayers = game.get("players").filter((player) => !player.$isEmpty("stage"));
+        nonTurnPlayers.forEach((p) => {
+            if (p.stage.guessed_word === currentTurnWord) {
+                map.set(p.name, map.get(p.name) + POINTS_CORRECT_GUESS);
+            }
+            const liers = nonTurnPlayers.filter((i) =>
+                i.name !== p.name && // not himself
+                i.stage.chosen_word === p.stage.guessed_word // guy who offered the lying wor
+            );
+            for (const lier of liers) {
+                map.set(lier.name, map.get(lier.name) + POINTS_FOR_MISLEADING_SOMEONE);
+            }
+        });
+
+        map.set(currentTurnName, map.get(currentTurnName) + scoreOfTurnPlayer);
+
+        return map;
     }
 
     public getCorrectGuessers(game: MongooseDocument) {
@@ -136,18 +170,26 @@ export class GameServiceHelpers {
         return word;
     }
 
+    public getCurrentStage(game: MongooseDocument) {
+        return game.get("stage");
+    }
+
+    public getCurrentTurnId(game: MongooseDocument) {
+        return game.get("permutation")[game.get("stage")];
+    }
+
     public getCurrentTurnPic(game: MongooseDocument) {
-        const turnId = game.get("permutation")[game.get("stage")];
+        const turnId = this.getCurrentTurnId(game);
         return game.get("players")[turnId].pic;
     }
 
     public getCurrentTurnName(game: MongooseDocument) {
-        const turnId = game.get("permutation")[game.get("stage")];
+        const turnId = this.getCurrentTurnId(game);
         return game.get("players")[turnId].name;
     }
 
     public getCurrentTurnWord(game: MongooseDocument) {
-        const turnId = game.get("permutation")[game.get("stage")];
+        const turnId = this.getCurrentTurnId(game);
         return game.get("players")[turnId].word;
     }
 

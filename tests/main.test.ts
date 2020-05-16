@@ -56,16 +56,56 @@ describe('Post Endpoints', () => {
         await checkGameKatu();
     }
 
+    async function checkChooseFromWords(words: string[]) {
+        let game = await request(app).get("/game/" + code + "?user=janski").send();
+        expect(game.body.data.chooseWord.length).toEqual(words.length);
+        game = await request(app).get("/game/" + code + "?user=keti").send();
+        expect(game.body.data.chooseWord.length).toEqual(words.length);
+        game = await request(app).get("/game/" + code + "?user=katu").send();
+        expect(game.body.data.chooseWord.length).toEqual(words.length);
+
+        gameStateJanski.chooseWord = expect.arrayContaining(words);
+        gameStateKeti.chooseWord = expect.arrayContaining(words);
+        gameStateKatu.chooseWord = expect.arrayContaining(words);
+    }
+
     function setState(state: StateEnum) {
         gameStateKeti.state = state;
         gameStateJanski.state = state;
         gameStateKatu.state = state;
     }
 
+    function setNamePic(pic: string) {
+        gameStateKeti.namePic = pic;
+        gameStateJanski.namePic = pic;
+        gameStateKatu.namePic = pic;
+    }
+
     function setWaiting(waiting: string[]) {
         gameStateKeti.waitingFor = waiting;
         gameStateJanski.waitingFor = waiting;
         gameStateKatu.waitingFor = waiting;
+    }
+
+    function finishStage(janskiPoints: number, ketiPoints: number, katuPoints: number) {
+        delete gameStateKeti.namePic;
+        delete gameStateJanski.namePic;
+        delete gameStateKatu.namePic;
+        delete gameStateKeti.chooseWord;
+        delete gameStateJanski.chooseWord;
+        delete gameStateKatu.chooseWord;
+        delete gameStateJanski.myTurn;
+        delete gameStateKatu.myTurn;
+        delete gameStateKeti.myTurn;
+
+        const players = gameStateJanski.players;
+        players.find((p) => p.name === "janski").score += janskiPoints;
+        players.find((p) => p.name === "keti").score += ketiPoints;
+        players.find((p) => p.name === "katu").score += katuPoints;
+
+        gameStateJanski.players = players;
+        gameStateKeti.players = players;
+        gameStateKatu.players = players;
     }
 
     it('Test main flow', async () => {
@@ -142,9 +182,7 @@ describe('Post Endpoints', () => {
             .toEqual(0);
 
         setState(StateEnum.ACTION_NAME);
-        gameStateKeti.namePic = "AAA";
-        gameStateJanski.namePic = "AAA";
-        gameStateKatu.namePic = "AAA";
+        setNamePic("AAA");
         gameStateJanski.myTurn = true;
         gameStateJanski.remainingSec = expect.any(Number);
         gameStateKeti.remainingSec = expect.any(Number);
@@ -182,16 +220,8 @@ describe('Post Endpoints', () => {
             .toEqual(0);
 
         // double check sizes
-        let game = await request(app).get("/game/" + code + "?user=janski").send();
-        expect(game.body.data.chooseWord.length).toEqual(3);
-        game = await request(app).get("/game/" + code + "?user=keti").send();
-        expect(game.body.data.chooseWord.length).toEqual(3);
-        game = await request(app).get("/game/" + code + "?user=katu").send();
-        expect(game.body.data.chooseWord.length).toEqual(3);
+        await checkChooseFromWords(["w1", "ww1", "ww2"]);
 
-        gameStateJanski.chooseWord = expect.arrayContaining(["w1", "ww1", "ww2"]);
-        gameStateKeti.chooseWord = expect.arrayContaining(["w1", "ww1", "ww2"]);
-        gameStateKatu.chooseWord = expect.arrayContaining(["w1", "ww1", "ww2"]);
         setState(StateEnum.ACTION_CHOOSE);
         setWaiting(["keti", "katu"]);
         await checkGame();
@@ -226,26 +256,123 @@ describe('Post Endpoints', () => {
 
         setState(StateEnum.ACTION_SCORES);
         setWaiting([]);
-        delete gameStateKeti.namePic;
-        delete gameStateJanski.namePic;
-        delete gameStateKatu.namePic;
-        delete gameStateKeti.chooseWord;
-        delete gameStateJanski.chooseWord;
-        delete gameStateKatu.chooseWord;
-        delete gameStateJanski.myTurn;
-        delete gameStateKatu.myTurn;
-        delete gameStateKeti.myTurn;
+        finishStage(POINTS_WIN_ON_YOUR_TURN, POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE, 0);
+        await checkGame();
 
-        const newPlayers = [
-            {name: "janski", score: POINTS_WIN_ON_YOUR_TURN},
-            {name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE},
-            {name: "katu", score: 0}
-        ];
+        // Nothing happens
+        await checkGame();
 
-        gameStateJanski.players = newPlayers;
-        gameStateKeti.players = newPlayers;
-        gameStateKatu.players = newPlayers;
+        // pass time.
+        await Game.updateOne({}, {$set: {stageStartTime: Date.now() - 900*1000}});
 
+        /**************************************
+         *
+         *      S  T  A  G  E      I I
+         *
+         **************************************/
+
+        setState(StateEnum.ACTION_NAME);
+        setWaiting(["janski", "katu"]);
+        setNamePic("BBB")
+        gameStateKeti.myTurn = true;
+
+        await checkGame();
+
+        // Zhani chooses
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "janski", word: "ww11"})).body.code)
+            .toEqual(0);
+
+        // Keti cannot choose
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "keti", word: "ww11"})).body.code)
+            .toEqual(-3);
+
+        // Nothing changes
+        setWaiting(["katu"]);
+        await checkGame();
+
+        // Katu chooses the same!
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "katu", word: "ww11"})).body.code)
+            .toEqual(0);
+
+        // double check sizes
+        await checkChooseFromWords(["w2", "ww11", "ww11"]);
+
+        setState(StateEnum.ACTION_CHOOSE);
+        setWaiting(["janski", "katu"]);
+        await checkGame();
+
+        // Janski can guess his own word, if there is a duplicate
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "janski", word: "ww11"})).body.code)
+            .toEqual(0);
+
+        setWaiting(["katu"]);
+        await checkGame();
+
+        // Katu guesses her own too
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "katu", word: "ww11"})).body.code)
+            .toEqual(0);
+
+        setState(StateEnum.ACTION_SCORES);
+        setWaiting([]);
+        finishStage(POINTS_FOR_MISLEADING_SOMEONE, 0, POINTS_FOR_MISLEADING_SOMEONE);
+        await checkGame();
+
+        // pass time.
+        await Game.updateOne({}, {$set: {stageStartTime: Date.now() - 900*1000}});
+
+        /**************************************
+         *
+         *      S  T  A  G  E      I I I
+         *
+         **************************************/
+
+        setState(StateEnum.ACTION_NAME);
+        setWaiting(["janski", "keti"]);
+        setNamePic("CCC")
+        gameStateKatu.myTurn = true;
+
+        await checkGame();
+
+        // Zhani chooses
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "janski", word: "ww22"})).body.code)
+            .toEqual(0);
+
+        setWaiting(["keti"]);
+        await checkGame();
+
+        // Keti chooses same as original word!
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "keti", word: "w3"})).body.code)
+            .toEqual(0);
+
+        await checkChooseFromWords(["w3", "ww22", "w3"]);
+
+        setState(StateEnum.ACTION_CHOOSE);
+        setWaiting(["janski", "keti"]);
+        await checkGame();
+
+        // Janski guesses correctly
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "janski", word: "w3"})).body.code)
+            .toEqual(0);
+
+        setWaiting(["keti"]);
+        await checkGame();
+
+        // Keti also guesses correctly, it's own word!
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "keti", word: "w3"})).body.code)
+            .toEqual(0);
+
+        setState(StateEnum.ACTION_SCORES);
+        setWaiting([]);
+        finishStage(POINTS_CORRECT_GUESS, POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE, 0);
+        await checkGame();
+
+        // pass time.
+        await Game.updateOne({}, {$set: {stageStartTime: Date.now() - 900*1000}});
+
+        setState(StateEnum.FINISHED);
+        delete gameStateJanski.remainingSec;
+        delete gameStateKeti.remainingSec;
+        delete gameStateKatu.remainingSec;
         await checkGame();
     });
 });

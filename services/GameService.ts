@@ -33,7 +33,7 @@ export class GameService {
         if (game.state === StateEnum.ACTION_NAME) {
             const remainingSec = MAX_TIME_IN_ACTION_NAME_SEC - (Date.now() - game.stageStartTime)/1000;
             if (remainingSec < 0) {
-                await this.helper.checkAndAdvanceState(code, true);
+                await this.helper.checkAndAdvanceState(game, true);
                 return this.getGame(code, user);
             }
 
@@ -45,7 +45,7 @@ export class GameService {
         } else if (game.state === StateEnum.ACTION_CHOOSE) {
             const remainingSec = MAX_TIME_IN_ACTION_CHOOSE_SEC - (Date.now() - game.stageStartTime)/1000;
             if (remainingSec < 0) {
-                await this.helper.checkAndAdvanceState(code, true);
+                await this.helper.checkAndAdvanceState(game, true);
                 return this.getGame(code, user);
             }
 
@@ -61,7 +61,7 @@ export class GameService {
         } else if (game.state === StateEnum.ACTION_SCORES) {
             const remainingSec = MAX_TIME_IN_ACTION_SCORES_SEC - (Date.now() - game.stageStartTime)/1000;
             if (remainingSec < 0) {
-                await this.helper.checkAndAdvanceState(code, true);
+                await this.helper.checkAndAdvanceState(gameDocument, true);
                 return this.getGame(code, user);
             }
             ret.remainingSec = remainingSec;
@@ -115,7 +115,7 @@ export class GameService {
         }
 
         await Game.updateOne({code}, {$set: {
-            state: "waiting_for_initial_pic",
+            state: StateEnum.WAITING_FOR_INITIAL_PIC,
             stageStartTime: Date.now(),
             "players.$[].waiting_for_action": true
         }});
@@ -124,7 +124,7 @@ export class GameService {
 
     // state:waiting_for_initial_pic -> state:action_name
     public async savePic(code: string, user: string, pic: string): Promise<Response<null>> {
-        const game = await Game.findOne({code}, {"state": 1, "players": "1"});
+        let game = await Game.findOne({code}, {"state": 1, "players": "1"});
         if (!game) {
             return ResponseFail(-1);
         }
@@ -142,13 +142,14 @@ export class GameService {
             return ResponseFail(-3);
         }
 
-        await this.helper.checkAndAdvanceState(code);
+        game = await Game.findOne({code});
+        await this.helper.checkAndAdvanceState(game);
         return ResponseOk(null);
     }
 
     // state:action_name -> state:action_choose
     public async pickWord(code: string, player: string, word: string): Promise<Response<null>> {
-        const game = await Game.findOne({code});
+        let game = await Game.findOne({code});
         if (!game) {
             return ResponseFail(-1);
         }
@@ -172,13 +173,14 @@ export class GameService {
             return ResponseFail(-4);
         }
 
-        await this.helper.checkAndAdvanceState(code);
+        game = await Game.findOne({code});
+        await this.helper.checkAndAdvanceState(game);
         return ResponseOk(null);
     }
 
     // state:action_choose -> state:showing_scores -> state:action_name?
     public async guessWord(code: string, player: string, word: string): Promise<Response<null>> {
-        const game = await Game.findOne({code});
+        let game = await Game.findOne({code});
         if (!game) {
             return ResponseFail(-1);
         }
@@ -191,11 +193,14 @@ export class GameService {
             return ResponseFail(-3);
         }
 
-        if (!(await this.helper.getAllWordsToGuess(game)).find((w) => w.word === word)) {
+        const words = (await this.helper.getAllWordsToGuess(game)).filter((w) => w.word === word);
+
+        if (words.length === 0) {
             return ResponseFail(-4);
         }
 
-        if ((await this.helper.getAllWordsToGuess(game)).find((w) => w.word === word).owner === player) {
+        // Let the user choose his word, if it's more then 1 times.
+        if (words.length === 1 && words[0].owner === player) {
             return ResponseFail(-6);
         }
 
@@ -210,7 +215,8 @@ export class GameService {
             return ResponseFail(-5);
         }
 
-        await this.helper.checkAndAdvanceState(code);
+        game = await Game.findOne({code});
+        await this.helper.checkAndAdvanceState(game);
         return ResponseOk(null);
     }
 }
