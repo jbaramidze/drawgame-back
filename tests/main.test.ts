@@ -99,6 +99,17 @@ describe('Post Endpoints', () => {
         gameStateKatu.waitingFor = waiting;
     }
 
+    function clearTurn() {
+        gameStateJanski.myTurn = false;
+        gameStateKatu.myTurn = false;
+        gameStateKeti.myTurn = false;
+    }
+
+    function setTurn(guy: any) {
+        clearTurn();
+        guy.myTurn = true;
+    }
+
     function finishStage(janskiPoints: number, ketiPoints: number, katuPoints: number) {
         delete gameStateKeti.namePic;
         delete gameStateJanski.namePic;
@@ -106,9 +117,9 @@ describe('Post Endpoints', () => {
         delete gameStateKeti.chooseWord;
         delete gameStateJanski.chooseWord;
         delete gameStateKatu.chooseWord;
+        delete gameStateKeti.myTurn;
         delete gameStateJanski.myTurn;
         delete gameStateKatu.myTurn;
-        delete gameStateKeti.myTurn;
 
         const players = gameStateJanski.players;
         players.find((p) => p.name === "janski").score += janskiPoints;
@@ -195,7 +206,7 @@ describe('Post Endpoints', () => {
 
         setState(StateEnum.ACTION_NAME);
         setNamePic("AAA");
-        gameStateJanski.myTurn = true;
+        setTurn(gameStateJanski);
         gameStateJanski.remainingSec = expect.any(Number);
         gameStateKeti.remainingSec = expect.any(Number);
         gameStateKatu.remainingSec = expect.any(Number);
@@ -288,9 +299,8 @@ describe('Post Endpoints', () => {
         setState(StateEnum.ACTION_NAME);
         clearGuesses();
         setWaiting(["janski", "katu"]);
-        setNamePic("BBB")
-        gameStateKeti.myTurn = true;
-
+        setNamePic("BBB");
+        setTurn(gameStateKeti);
         await checkGame();
 
         // Zhani chooses
@@ -347,7 +357,7 @@ describe('Post Endpoints', () => {
         clearGuesses();
         setWaiting(["janski", "keti"]);
         setNamePic("CCC")
-        gameStateKatu.myTurn = true;
+        setTurn(gameStateKatu);
 
         await checkGame();
 
