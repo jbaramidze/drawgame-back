@@ -3,7 +3,7 @@ import Game, {StateEnum} from "../models/game.model";
 import Stage from "../models/stage.model";
 import {Response, ResponseFail, ResponseOk} from "../utils/Response";
 import {GameServiceHelpers} from "./GameServiceHelpers";
-import {MAX_TIME_IN_ACTION_NAME_SEC} from "../index";
+import {MAX_TIME_IN_ACTION_CHOOSE_SEC, MAX_TIME_IN_ACTION_NAME_SEC, MAX_TIME_IN_ACTION_SCORES_SEC} from "../index";
 
 export class GameService {
 
@@ -18,8 +18,8 @@ export class GameService {
 
         const game = gameDocument.toObject();
 
-        const remainingSec = MAX_TIME_IN_ACTION_NAME_SEC - (Date.now() - game.stageStartTime)/1000;
-        if (game.state !== StateEnum.FINISHED && remainingSec < 0) {
+        const remainingSec = (game.stageTillTime - Date.now())/1000;
+        if (game.stageTillTime && Date.now() > game.stageTillTime) {
             await this.helper.checkAndAdvanceState(gameDocument, true);
             return this.getGame(code, user);
         }
@@ -58,6 +58,7 @@ export class GameService {
             case StateEnum.ACTION_NAME:
                 response = {
                     ...baseData,
+                    stateSeconds: MAX_TIME_IN_ACTION_NAME_SEC,
                     state: StateEnum.ACTION_NAME,
                     namePic: this.helper.getCurrentTurnPic(gameDocument),
                     myTurn: this.helper.getCurrentTurnName(gameDocument) === user,
@@ -68,6 +69,7 @@ export class GameService {
             case StateEnum.ACTION_CHOOSE:
                 response = {
                     ...baseData,
+                    stateSeconds: MAX_TIME_IN_ACTION_CHOOSE_SEC,
                     state: StateEnum.ACTION_CHOOSE,
                     namePic: this.helper.getCurrentTurnPic(gameDocument),
                     myTurn: this.helper.getCurrentTurnName(gameDocument) === user,
@@ -80,17 +82,23 @@ export class GameService {
 
             case StateEnum.ACTION_SCORES:
                 const lastStage = (await Stage.find({game: game._id}).sort({stage: -1}));
+                const turnName = this.helper.getCurrentTurnName(gameDocument);
                 response = {
                     ...baseData,
                     state: StateEnum.ACTION_SCORES,
                     remainingSec: remainingSec,
+                    stateSeconds: MAX_TIME_IN_ACTION_SCORES_SEC,
+                    namePic: this.helper.getCurrentTurnPic(gameDocument),
+                    turn: turnName,
+                    turnScore: lastStage[0].get("guesses").find((g) => g.name === turnName).score,
                     guesses: lastStage[0].get("guesses")
                         .filter((g) => g.chosen_word)
                         .map((g) => {
                             return {
                                 name: g.name,
                                 chosen_word: g.chosen_word,
-                                guessed_word: g.guessed_word
+                                guessed_word: g.guessed_word,
+                                score: g.score
                             }
                         })
                 };
@@ -289,6 +297,7 @@ export interface ActionNameGameResponse extends BaseGameResponse {
     state: StateEnum.ACTION_NAME;
     myTurn: boolean;
     namePic: string;
+    stateSeconds: number;
     remainingSec: number;
 }
 
@@ -297,16 +306,22 @@ export interface ActionChooseGameResponse extends BaseGameResponse {
     myTurn: boolean;
     namePic: string;
     chooseWord: string[];
+    stateSeconds: number;
     remainingSec: number;
 }
 
 export interface ActionScoresGameResponse extends BaseGameResponse {
     state: StateEnum.ACTION_SCORES;
+    stateSeconds: number;
     remainingSec: number;
-    guesses?: Array<{
+    turn: string;
+    turnScore: number;
+    namePic: string;
+    guesses: Array<{
         name: string;
         chosen_word: string;
         guessed_word: string;
+        score: number;
     }>;
 }
 

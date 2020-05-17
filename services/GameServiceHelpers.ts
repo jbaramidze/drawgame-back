@@ -2,7 +2,13 @@ import {MongooseDocument} from "mongoose";
 import Game, {StateEnum} from "../models/game.model";
 import Word from "../models/word.model";
 import Stage from "../models/stage.model";
-import {POINTS_CORRECT_GUESS, POINTS_FOR_MISLEADING_SOMEONE, POINTS_WIN_ON_YOUR_TURN} from "../index";
+import {
+    MAX_TIME_IN_ACTION_CHOOSE_SEC,
+    MAX_TIME_IN_ACTION_NAME_SEC, MAX_TIME_IN_ACTION_SCORES_SEC,
+    POINTS_CORRECT_GUESS,
+    POINTS_FOR_MISLEADING_SOMEONE,
+    POINTS_WIN_ON_YOUR_TURN
+} from "../index";
 
 export class GameServiceHelpers {
     public async checkAndAdvanceState(game: MongooseDocument, force?: boolean) {
@@ -16,6 +22,7 @@ export class GameServiceHelpers {
                 $set: {
                     state: StateEnum.ACTION_NAME,
                     stageStartTime: Date.now(),
+                    stageTillTime: Date.now() + MAX_TIME_IN_ACTION_NAME_SEC * 1000,
                     permutation: this.randomPermutation(count),
                     "players.$[].waiting_for_action": true
                 }
@@ -28,6 +35,7 @@ export class GameServiceHelpers {
                 $set: {
                     state: StateEnum.ACTION_CHOOSE,
                     stageStartTime: Date.now(),
+                    stageTillTime: Date.now() + MAX_TIME_IN_ACTION_CHOOSE_SEC * 1000,
                     "players.$[].waiting_for_action": true
                 }
             });
@@ -51,7 +59,8 @@ export class GameServiceHelpers {
             await Game.updateOne({code: game.get("code")}, {
                 $set: {
                     "state": StateEnum.ACTION_SCORES,
-                    stageStartTime: Date.now()
+                    stageStartTime: Date.now(),
+                    stageTillTime: Date.now() + MAX_TIME_IN_ACTION_SCORES_SEC * 1000,
                 },
                 $unset: {
                     "players.$[].stage": ""
@@ -65,6 +74,9 @@ export class GameServiceHelpers {
                 await Game.updateOne({code: game.get("code")}, {
                     $set: {
                         state: StateEnum.FINISHED
+                    },
+                    $unset: {
+                        stageTillTime: ""
                     }
                 });
 
@@ -76,6 +88,7 @@ export class GameServiceHelpers {
                 $set: {
                     state: StateEnum.ACTION_NAME,
                     stageStartTime: Date.now(),
+                    stageTillTime: Date.now() + MAX_TIME_IN_ACTION_NAME_SEC * 1000,
                     "players.$[].waiting_for_action": true
                 },
                 $inc: {

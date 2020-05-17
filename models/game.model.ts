@@ -20,6 +20,7 @@ const gameSchema = new mongoose.Schema({
     },
     stage: Number,
     stageStartTime: Date,
+    stageTillTime: Date,
     permutation: [Number]
 }, {timestamps: true});
 
