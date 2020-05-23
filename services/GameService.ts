@@ -279,7 +279,7 @@ export interface BaseGameResponse {
     }>;
     state: StateEnum;
     word?: string;
-    waitingFor?: string;
+    waitingFor?: string[];
 };
 
 export type GameResponse = CreateGameResponse | WaitingForPicGameResponsew | ActionNameGameResponse |
