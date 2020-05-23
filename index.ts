@@ -7,9 +7,9 @@ export const POINTS_CORRECT_GUESS = 3;
 export const POINTS_FOR_MISLEADING_SOMEONE = 1;
 
 // Times
-export const MAX_TIME_IN_ACTION_NAME_SEC = 30;
-export const MAX_TIME_IN_ACTION_CHOOSE_SEC = 30;
-export const MAX_TIME_IN_ACTION_SCORES_SEC = 5;
+export const MAX_TIME_IN_ACTION_NAME_SEC = 60;
+export const MAX_TIME_IN_ACTION_CHOOSE_SEC = 60;
+export const MAX_TIME_IN_ACTION_SCORES_SEC = 10;
 
 mongoose.connect("mongodb://localhost:27099/drawful", {useNewUrlParser: true, useUnifiedTopology: true})
     .catch((e) => {

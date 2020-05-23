@@ -16,7 +16,11 @@ export class GameService {
             return ResponseFail(-1);
         }
 
+
         const game = gameDocument.toObject();
+        if (!game.players.find((p) => p.name === user)) {
+            return ResponseFail(-2);
+        }
 
         const remainingSec = (game.stageTillTime - Date.now())/1000;
         if (game.stageTillTime && Date.now() > game.stageTillTime) {
@@ -74,9 +78,8 @@ export class GameService {
                     namePic: this.helper.getCurrentTurnPic(gameDocument),
                     myTurn: this.helper.getCurrentTurnName(gameDocument) === user,
                     remainingSec: remainingSec,
-                    chooseWord: (await this.helper.getAllWordsToGuess(gameDocument))
-                        .map((w) => w.word)
-                        .sort(() => Math.random() - 0.5)
+                    chooseWord: this.helper.applyPermutation((await this.helper.getAllWordsToGuess(gameDocument))
+                        .map((w) => w.word), game.stagePermutation)
                 };
                 break;
 

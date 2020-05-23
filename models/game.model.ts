@@ -21,7 +21,8 @@ const gameSchema = new mongoose.Schema({
     stage: Number,
     stageStartTime: Date,
     stageTillTime: Date,
-    permutation: [Number]
+    permutation: [Number], // for whole game
+    stagePermutation: [Number] // for given stage
 }, {timestamps: true});
 
 export default mongoose.model('game', gameSchema);

@@ -222,8 +222,12 @@ describe('Post Endpoints', () => {
 
         await checkGame();
 
+        // Make sure getGame fails for invalid guys
+        expect((await request(app).get("/game/" + code + "?user=temo").send()).body.code)
+            .toEqual(-2);
+
         // Only owner can start the game
-        expect((await await request(app).post("/game/" + code + "/start").send({user: "keti"})).body.code)
+        expect((await request(app).post("/game/" + code + "/start").send({user: "keti"})).body.code)
             .toEqual(-3);
 
         // Start game
