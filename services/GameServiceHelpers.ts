@@ -35,7 +35,9 @@ export class GameServiceHelpers {
             });
 
             // FIXME: Can we do in 1 go?
-            await Game.updateOne({code: game.get("code")}, {$set: {"players.0.waiting_for_action": false}});
+            game = await Game.findOne({code: game.get("code")});
+            const key = `players.${this.getCurrentTurnId(game)}.waiting_for_action`;
+            await Game.updateOne({code: game.get("code")}, {$set: {[key]: false}});
         } else if (game.get("state") === StateEnum.ACTION_NAME) {
             await Game.updateOne({code: game.get("code")}, {
                 $set: {

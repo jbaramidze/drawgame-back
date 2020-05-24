@@ -264,9 +264,15 @@ describe('Post Endpoints', () => {
         setStateActionName(["keti", "katu"], "AAA", gameStateJanski);
 
         // Check and fix permutations before checking the game
-        const permutations = await Game.findOne({code}).lean(true);
+        const permutations: any = await Game.findOne({code}).lean(true);
+        const started = permutations.permutation[0];
+        for (let i = 0; i < 3; i++) {
+            expect(permutations.players[i].waiting_for_action).toEqual(i !== started);
+        }
+
         expect((permutations as any).permutation.sort()).toEqual([0, 1, 2]);
-        await Game.updateOne({code}, {$set: {permutation: [0, 1, 2]}});
+        await Game.updateOne({code}, {$set: {permutation: [0, 1, 2], "players.$[].waiting_for_action": true}});
+        await Game.updateOne({code}, {$set: {"players.0.waiting_for_action": false}});
 
         await checkGame();
 
