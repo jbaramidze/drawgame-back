@@ -239,7 +239,7 @@ export class GameServiceHelpers {
             ]
         ))[0].words;
 
-        return [...(others.filter((w) => w.word)), {word: this.getCurrentTurnWord(game), owner: game.get("owner")}];
+        return [...(others.filter((w) => w.word)), {word: this.getCurrentTurnWord(game), owner: this.getCurrentTurnName(game)}];
     }
 
     public getPlayer(user: string, word: string) {
