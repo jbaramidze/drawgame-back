@@ -14,7 +14,7 @@ jest.setTimeout(30000);
 
 describe('Post Endpoints', () => {
     beforeAll(async () => {
-        await mongoose.connect("mongodb://localhost:27099/drawfulTest", {useNewUrlParser: true, useUnifiedTopology: true})
+        await mongoose.connect(`${process.env.MONGO_ADDR}/drawgameTest`, {useNewUrlParser: true, useUnifiedTopology: true})
     });
 
     beforeEach(async () => {
