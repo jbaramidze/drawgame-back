@@ -6,7 +6,8 @@
   "scripts": {
     "test": "jest --forceExit",
     "tsc": "./node_modules/typescript/bin/tsc -w",
-    "start": "nodemon"
+    "start": "nodemon",
+    "startProd": "node index.js"
   },
   "keywords": [],
   "author": "",
