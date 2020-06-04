@@ -10,8 +10,7 @@ export const POINTS_FOR_MISLEADING_SOMEONE = 1;
 export const MAX_TIME_IN_ACTION_NAME_SEC = 60;
 export const MAX_TIME_IN_ACTION_CHOOSE_SEC = 60;
 export const MAX_TIME_IN_ACTION_SCORES_SEC = 20;
-
-mongoose.connect("mongodb+srv://admin:ojs763985jsnb64a@cluster0-pjozz.mongodb.net/drawful", {useNewUrlParser: true, useUnifiedTopology: true})
+mongoose.connect(process.env.MONGO_ADDR, {useNewUrlParser: true, useUnifiedTopology: true})
     .then(() => {
         app.listen(3000, () => console.log(`Listening at http://localhost:${3000}`));
     })
