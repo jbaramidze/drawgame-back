@@ -8,14 +8,15 @@ export class GameRouter {
     constructor(private readonly gameService: GameService) {
 
         this.router.post("/",
-            [body('user').isString().notEmpty()],
+            [body('user').isString().notEmpty(),
+                     body('score').isNumeric().notEmpty()],
             // @ts-ignore
             async (req, res) => {
                 if (!this.validate(req, res)) {
                     return;
                 }
 
-                res.json(await this.gameService.newGame(req.body.user));
+                res.json(await this.gameService.newGame(req.body.user, Number(req.body.score)));
             });
 
         this.router.get("/:code",

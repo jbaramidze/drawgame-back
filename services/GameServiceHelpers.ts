@@ -82,19 +82,49 @@ export class GameServiceHelpers {
             const playersNum = this.getAllPlayersCount(game);
 
             if (stage + 1 == playersNum) {
+                const newWords = await this.getNNonexistentWords(
+                    game.get("code"),
+                    game.get("players").length,
+                    game.get("allUsedWords")
+                    );
+
+                const words = {};
+                const unset = {};
+                for (let i = 0; i < newWords.length; i++) {
+                    words[`players.${i}.word`] = newWords[i];
+                    words[`players.${i}.waiting_for_action`] = true;
+                    unset[`players.${i}.pic`] = "";
+                }
+
+                // need random words.
                 await Game.updateOne({code: game.get("code")}, {
                     $set: {
-                        state: StateEnum.FINISHED
+                        state: StateEnum.WAITING_FOR_INITIAL_PIC,
+                        stageStartTime: Date.now(),
+                        ...words
                     },
                     $unset: {
-                        stageTillTime: ""
+                        stageTillTime: "",
+                        //"players.$[].pic": ""
+                        ...unset
+                    },
+                    $push: {
+                        allUsedWords: {$each: game.get("players").map((p) => p.word) }
                     }
                 });
 
                 return game;
+            //     await Game.updateOne({code: game.get("code")}, {
+            //         $set: {
+            //             state: StateEnum.FINISHED
+            //         },
+            //         $unset: {
+            //             stageTillTime: ""
+            //         }
+            //     });
+            //
             }
 
-            const count = game.get("players").length;
             await Game.updateOne({code: game.get("code")}, {
                 $set: {
                     state: StateEnum.ACTION_NAME,
@@ -182,14 +212,30 @@ export class GameServiceHelpers {
         return count;
     }
 
-    public async getNonexistentWord(code: string) {
+    public async getNNonexistentWords(code: string, count: number, excludeWords: string[] = []) {
+        const words: string[] = [];
+        for (let i = 0; i < count; i++) {
+            words.push(await this.getNonexistentWord(code, [...excludeWords, ...words]));
+        }
+
+        return words;
+    }
+
+    public async getNonexistentWord(code: string, excludeWords: string[] = []) {
+        let triesLeft = 1000;
         const count = await Word.countDocuments();
         let word;
         do {
+            triesLeft--;
+            if (triesLeft === 0) {
+                console.log("ERROR! could not find new word.");
+                return "";
+            }
             const index = Math.floor(Math.random() * count);
             const words = await Word.find();
             word = words[index].get("word");
-        } while ((await Game.find({"$and": [{code}, {"players.word": word}]})).length > 0);
+        } while ((await Game.find({"$and": [{code}, {"players.word": word}]})).length > 0 ||
+                  excludeWords.find((w) => w === word));
 
         return word;
     }
@@ -199,7 +245,7 @@ export class GameServiceHelpers {
     }
 
     public getCurrentTurnId(game: MongooseDocument) {
-        return game.get("permutation")[game.get("stage")];
+        return game.get("permutation")[game.get("stage") % game.get("players").length];
     }
 
     public getCurrentTurnPic(game: MongooseDocument) {

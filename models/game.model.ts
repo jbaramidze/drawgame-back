@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const gameSchema = new mongoose.Schema({
     code: String,
+    maxScore: String,
     owner: String,
     players: [{
         name: String,
@@ -22,6 +23,7 @@ const gameSchema = new mongoose.Schema({
     stageStartTime: Date,
     stageTillTime: Date,
     permutation: [Number], // for whole game
+    allUsedWords: [String]
 }, {timestamps: true});
 
 export default mongoose.model('game', gameSchema);

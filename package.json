@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "is_test=true jest --forceExit",
+    "test": "is_test=true jest",
     "tsc": "./node_modules/typescript/bin/tsc -w",
     "start": "nodemon",
     "startProd": "node index.js"
@@ -31,6 +31,7 @@
     "express": "^4.17.1",
     "express-validator": "^6.4.0",
     "jest": "^25.3.0",
+    "jest-extended": "^0.11.5",
     "mongoose": "^5.9.7",
     "supertest": "^4.0.2",
     "ts-jest": "^25.4.0",

@@ -119,10 +119,19 @@ export class GameService {
     }
 
     // state:none -> state:created
-    public async newGame(user: string): Promise<Response<GeneratedGameCode>> {
+    public async newGame(user: string, score: number): Promise<Response<GeneratedGameCode>> {
         const code = randomString(4);
         const word = await this.helper.getNonexistentWord(code);
-        const game = new Game({code, owner: user, stage: 0, players: [this.helper.getPlayer(user, word)], state: "created", stageStartTime: Date.now()});
+        const game = new Game({
+            code,
+            owner: user,
+            stage: 0,
+            players: [this.helper.getPlayer(user, word)],
+            state: "created",
+            stageStartTime: Date.now(),
+            maxScore: score,
+            allUsedWords: []
+        });
         await game.save();
         return ResponseOk({code});
     }
