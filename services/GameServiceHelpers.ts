@@ -16,6 +16,10 @@ export class GameServiceHelpers {
         return new Array(array.length).fill(-1).map((_, i) => array[permutation[i]])
     }
 
+    public applyRandomPermutation(array: string[]) {
+        return this.applyPermutation(array, this.randomPermutation(array.length));
+    }
+
     public async checkAndAdvanceState(game: MongooseDocument, force?: boolean) {
         if (!force && game.get("players").find((p) => p.waiting_for_action)) {
             return
@@ -29,7 +33,6 @@ export class GameServiceHelpers {
                     stageStartTime: Date.now(),
                     stageTillTime: Date.now() + MAX_TIME_IN_ACTION_NAME_SEC * 1000,
                     permutation: this.randomPermutation(count),
-                    stagePermutation: this.randomPermutation(count),
                     "players.$[].waiting_for_action": true
                 }
             });
@@ -97,7 +100,6 @@ export class GameServiceHelpers {
                     state: StateEnum.ACTION_NAME,
                     stageStartTime: Date.now(),
                     stageTillTime: Date.now() + MAX_TIME_IN_ACTION_NAME_SEC * 1000,
-                    stagePermutation: this.randomPermutation(count),
                     "players.$[].waiting_for_action": true
                 },
                 $inc: {

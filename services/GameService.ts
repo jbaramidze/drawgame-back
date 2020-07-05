@@ -78,8 +78,8 @@ export class GameService {
                     namePic: this.helper.getCurrentTurnPic(gameDocument),
                     myTurn: this.helper.getCurrentTurnName(gameDocument) === user,
                     remainingSec: remainingSec,
-                    chooseWord: this.helper.applyPermutation((await this.helper.getAllWordsToGuess(gameDocument))
-                        .map((w) => w.word), game.stagePermutation)
+                    chooseWord: this.helper.applyRandomPermutation((await this.helper.getAllWordsToGuess(gameDocument))
+                        .map((w) => w.word))
                 };
                 break;
 

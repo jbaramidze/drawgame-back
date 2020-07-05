@@ -184,6 +184,18 @@ describe('Post Endpoints', () => {
         setStateSeconds(MAX_TIME_IN_ACTION_SCORES_SEC);
     }
 
+    // it('Test skipping steps', async () => {
+    //     await addWord("w1", "ge");
+    //     const createGame = await request(app).post('/game').send({user: "janski"});
+    //     code = createGame.body.data.code;
+    //
+    //     await addWord("w2", "ge");
+    //     await request(app).post("/game/" + code + "/join").send({user: "keti"});
+    //
+    //     await addWord("w3", "ge");
+    //     await request(app).post("/game/" + code + "/join").send({user: "katu"});
+    // });
+
     it('Test main flow', async () => {
         await addWord("w1", "ge");
 
