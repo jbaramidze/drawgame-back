@@ -185,6 +185,30 @@ describe('Post Endpoints', () => {
         setStateSeconds(MAX_TIME_IN_ACTION_SCORES_SEC);
     }
 
+    async function checkAndFixPermutation() {
+        // Check and fix permutations before checking the game
+        const permutations: any = await Game.findOne({code}).lean(true);
+        const started = permutations.permutation[0];
+        for (let i = 0; i < 3; i++) {
+            expect(permutations.players[i].waiting_for_action).toEqual(i !== started);
+        }
+
+        expect((permutations as any).permutation.sort()).toEqual([0, 1, 2]);
+        await Game.updateOne({code}, {$set: {permutation: [0, 1, 2], "players.$[].waiting_for_action": true}});
+        await Game.updateOne({code}, {$set: {"players.0.waiting_for_action": false}});
+    }
+
+    function getInitialState(scores: number[], words: string[]) {
+        return {
+            code,
+            owner: "janski",
+            players: [{name: "janski", score: scores[0]}, {name: "keti", score: scores[1]}, {name: "katu", score: scores[2]}],
+            state: StateEnum.WAITING_FOR_INITIAL_PIC,
+            waitingFor: ["janski", "keti", "katu"],
+            word: expect.toBeOneOf(words)
+        }
+    }
+
     // it('Test skipping steps', async () => {
     //     await addWord("w1", "ge");
     //     const createGame = await request(app).post('/game').send({user: "janski"});
@@ -276,16 +300,7 @@ describe('Post Endpoints', () => {
 
         setStateActionName(["keti", "katu"], "AAA", gameStateJanski);
 
-        // Check and fix permutations before checking the game
-        const permutations: any = await Game.findOne({code}).lean(true);
-        const started = permutations.permutation[0];
-        for (let i = 0; i < 3; i++) {
-            expect(permutations.players[i].waiting_for_action).toEqual(i !== started);
-        }
-
-        expect((permutations as any).permutation.sort()).toEqual([0, 1, 2]);
-        await Game.updateOne({code}, {$set: {permutation: [0, 1, 2], "players.$[].waiting_for_action": true}});
-        await Game.updateOne({code}, {$set: {"players.0.waiting_for_action": false}});
+        await checkAndFixPermutation();
 
         await checkGame();
 
@@ -476,32 +491,9 @@ describe('Post Endpoints', () => {
          *
          **************************************/
 
-        gameStateJanski = {
-            code,
-            owner: "janski",
-            players: [{name: "janski", score: 9}, {name: "keti", score: 8}, {name: "katu", score: 1}],
-            state: StateEnum.WAITING_FOR_INITIAL_PIC,
-            waitingFor: ["janski", "keti", "katu"],
-            word: expect.toBeOneOf(["w4", "w5", "w6"])
-        };
-
-        gameStateKeti = {
-            code,
-            owner: "janski",
-            players: [{name: "janski", score: 9}, {name: "keti", score: 8}, {name: "katu", score: 1}],
-            state: StateEnum.WAITING_FOR_INITIAL_PIC,
-            waitingFor: ["janski", "keti", "katu"],
-            word: expect.toBeOneOf(["w4", "w5", "w6"])
-        };
-
-        gameStateKatu = {
-            code,
-            owner: "janski",
-            players: [{name: "janski", score: 9}, {name: "keti", score: 8}, {name: "katu", score: 1}],
-            state: StateEnum.WAITING_FOR_INITIAL_PIC,
-            waitingFor: ["janski", "keti", "katu"],
-            word: expect.toBeOneOf(["w4", "w5", "w6"])
-        };
+        gameStateJanski = getInitialState([9, 8, 1], ["w4", "w5", "w6"]);
+        gameStateKeti = getInitialState([9, 8, 1], ["w4", "w5", "w6"]);
+        gameStateKatu = getInitialState([9, 8, 1], ["w4", "w5", "w6"]);
 
         await addWord("w4", "ge");
         await addWord("w5", "ge");
@@ -509,7 +501,180 @@ describe('Post Endpoints', () => {
         await checkGame();
 
         // make sure words are unique
-        const game: any = await Game.findOne({code}).lean(true);
+        let game: any = await Game.findOne({code}).lean(true);
         expect(game.players.map((p) => p.word).sort()).toEqual(["w4", "w5", "w6"]);
+
+        // set them in order.
+        await Game.updateOne({code, players: {$elemMatch: {name: "janski"}}}, {"players.$.word": "w4"});
+        await Game.updateOne({code, players: {$elemMatch: {name: "keti"}}}, {"players.$.word": "w5"});
+        await Game.updateOne({code, players: {$elemMatch: {name: "katu"}}}, {"players.$.word": "w6"});
+
+        await checkGame();
+
+        // make sure words are unique, again
+        game = await Game.findOne({code}).lean(true);
+        expect(game.players.map((p) => p.word).sort()).toEqual(["w4", "w5", "w6"]);
+
+        // name the pics
+        expect((await request(app).post("/game/" + code + "/1/savepic").send({user: "janski", pic: "DDD"})).body.code)
+            .toEqual(0);
+        expect((await request(app).post("/game/" + code + "/1/savepic").send({user: "keti", pic: "EEE"})).body.code)
+            .toEqual(0);
+        expect((await request(app).post("/game/" + code + "/1/savepic").send({user: "katu", pic: "FFF"})).body.code)
+            .toEqual(0);
+
+        setStateActionName(["keti", "katu"], "DDD", gameStateJanski);
+
+        await checkAndFixPermutation();
+        await checkGame();
+
+        // Keti gives a name
+        // Katu cannot make it in time!
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "keti", word: "w41"})).body.code)
+            .toEqual(0);
+
+        // pass time.
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+
+        // double check sizes
+        await checkChooseFromWords(["w41", "w4"]);
+
+        setState(StateEnum.ACTION_CHOOSE);
+        setWaiting(["keti", "katu"]);
+        await checkGame();
+
+        // keti guesses
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "keti", word: "w4"})).body.code)
+            .toEqual(0);
+
+        // katu guesses keti's
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "katu", word: "w41"})).body.code)
+            .toEqual(0);
+
+        setStateActionScores([
+                {chosen_word: "w41", guessed_word: "w4", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE},
+                {chosen_word: undefined, guessed_word: "w41", name: "katu", score: 0}],
+            "janski",
+            POINTS_WIN_ON_YOUR_TURN,
+            POINTS_WIN_ON_YOUR_TURN,
+            POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE,
+            0);
+
+        await checkGame();
+
+        // time passes
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+
+        setStateActionName(["janski", "katu"], "EEE", gameStateKeti);
+        await checkGame();
+
+        // Katu chooses, Zhani is too late
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "katu", word: "w51"})).body.code)
+            .toEqual(0);
+
+        // pass time.
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+
+        // double check sizes
+        await checkChooseFromWords(["w5", "w51"]);
+
+        setState(StateEnum.ACTION_CHOOSE);
+        setWaiting(["janski", "katu"]);
+        await checkGame();
+
+        // Both guess
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "janski", word: "w5"})).body.code)
+            .toEqual(0);
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "katu", word: "w5"})).body.code)
+            .toEqual(0);
+
+        setStateActionScores([
+                {chosen_word: undefined, guessed_word: "w5", name: "janski", score: POINTS_CORRECT_GUESS},
+                {chosen_word: "w51", guessed_word: "w5", name: "katu", score: POINTS_CORRECT_GUESS}],
+            "keti",
+            0,
+            POINTS_CORRECT_GUESS,
+            0,
+            POINTS_CORRECT_GUESS);
+
+        await checkGame();
+
+        // Covered both cases of when cannot choose the word. Now let's test failing to guess the word.
+
+        // time passes
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+
+        setStateActionName(["janski", "keti"], "FFF", gameStateKatu);
+        await checkGame();
+
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "janski", word: "w61"})).body.code)
+            .toEqual(0);
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "keti", word: "w62"})).body.code)
+            .toEqual(0);
+
+        await checkChooseFromWords(["w6", "w61", "w62"]);
+
+        setState(StateEnum.ACTION_CHOOSE);
+        setWaiting(["janski", "keti"]);
+        await checkGame();
+
+        // janski guesses, katu is too late
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "janski", word: "w6"})).body.code)
+            .toEqual(0);
+
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+
+        setStateActionScores([
+                {chosen_word: "w61", guessed_word: "w6", name: "janski", score: POINTS_CORRECT_GUESS},
+                {chosen_word: "w62", guessed_word: undefined, name: "keti", score: 0}],
+            "katu",
+            POINTS_WIN_ON_YOUR_TURN,
+            POINTS_CORRECT_GUESS,
+            0,
+            POINTS_WIN_ON_YOUR_TURN);
+
+        await checkGame();
+
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+
+        /**************************************
+         *
+         *      S  T  A  G  E      I I I . 1
+         *
+         **************************************/
+
+        gameStateJanski = getInitialState([20, 12, 9], ["w7", "w8", "w9"]);
+        gameStateKeti = getInitialState([20, 12, 9], ["w7", "w8", "w9"]);
+        gameStateKatu = getInitialState([20, 12, 9], ["w7", "w8", "w9"]);
+
+        await addWord("w7", "ge");
+        await addWord("w8", "ge");
+        await addWord("w9", "ge");
+        await checkGame();
+
+        // make sure words are unique
+        game = await Game.findOne({code}).lean(true);
+        expect(game.players.map((p) => p.word).sort()).toEqual(["w7", "w8", "w9"]);
+
+        // set them in order.
+        await Game.updateOne({code, players: {$elemMatch: {name: "janski"}}}, {"players.$.word": "w7"});
+        await Game.updateOne({code, players: {$elemMatch: {name: "keti"}}}, {"players.$.word": "w8"});
+        await Game.updateOne({code, players: {$elemMatch: {name: "katu"}}}, {"players.$.word": "w9"});
+
+        await checkGame();
+
+        // make sure words are unique, again
+        game = await Game.findOne({code}).lean(true);
+        expect(game.players.map((p) => p.word).sort()).toEqual(["w7", "w8", "w9"]);
+
+        // name the pics
+        expect((await request(app).post("/game/" + code + "/1/savepic").send({user: "janski", pic: "GGG"})).body.code)
+            .toEqual(0);
+        expect((await request(app).post("/game/" + code + "/1/savepic").send({user: "keti", pic: "HHH"})).body.code)
+            .toEqual(0);
+        expect((await request(app).post("/game/" + code + "/1/savepic").send({user: "katu", pic: "III"})).body.code)
+            .toEqual(0);
+
+
     });
 });

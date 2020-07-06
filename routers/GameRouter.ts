@@ -53,6 +53,7 @@ export class GameRouter {
                 res.json(await this.gameService.startGame(req.params.code, req.body.user));
             });
 
+        // FIXME: wtf is 1 doing there
         this.router.post("/:code/1/savepic",
             [body('user').isString().notEmpty(),
                       body('pic').isString().notEmpty()],

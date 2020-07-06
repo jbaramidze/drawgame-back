@@ -71,6 +71,7 @@ export class GameServiceHelpers {
                 $set: {
                     "state": StateEnum.ACTION_SCORES,
                     stageStartTime: Date.now(),
+                    "players.$[].waiting_for_action": false,
                     stageTillTime: Date.now() + MAX_TIME_IN_ACTION_SCORES_SEC * 1000,
                 },
                 $unset: {
@@ -81,7 +82,7 @@ export class GameServiceHelpers {
             const stage = this.getCurrentStage(game);
             const playersNum = this.getAllPlayersCount(game);
 
-            if (stage + 1 == playersNum) {
+            if (((stage + 1) % playersNum) === 0) {
                 const newWords = await this.getNNonexistentWords(
                     game.get("code"),
                     game.get("players").length,
@@ -96,7 +97,6 @@ export class GameServiceHelpers {
                     unset[`players.${i}.pic`] = "";
                 }
 
-                // need random words.
                 await Game.updateOne({code: game.get("code")}, {
                     $set: {
                         state: StateEnum.WAITING_FOR_INITIAL_PIC,
@@ -105,11 +105,13 @@ export class GameServiceHelpers {
                     },
                     $unset: {
                         stageTillTime: "",
-                        //"players.$[].pic": ""
                         ...unset
                     },
                     $push: {
                         allUsedWords: {$each: game.get("players").map((p) => p.word) }
+                    },
+                    $inc: {
+                        stage: 1
                     }
                 });
 

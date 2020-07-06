@@ -95,7 +95,7 @@ export class GameService {
                     turn: turnName,
                     turnScore: lastStage[0].get("guesses").find((g) => g.name === turnName).score,
                     guesses: lastStage[0].get("guesses")
-                        .filter((g) => g.chosen_word)
+                        .filter((g) => g.name !== lastStage[0].get("name"))
                         .map((g) => {
                             return {
                                 name: g.name,
