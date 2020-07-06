@@ -509,9 +509,7 @@ describe('Post Endpoints', () => {
         await checkGame();
 
         // make sure words are unique
-        const game = await Game.findOne({code}).lean(true);
-        // No idea why this is failing. otherwise all works good.
-        console.log(game.players);
-        //expect(game.players.map((p) => p.word).sort()).toEqual(["w4", "w5", "w6"]);
+        const game: any = await Game.findOne({code}).lean(true);
+        expect(game.players.map((p) => p.word).sort()).toEqual(["w4", "w5", "w6"]);
     });
 });
