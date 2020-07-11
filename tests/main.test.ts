@@ -676,5 +676,85 @@ describe('Post Endpoints', () => {
             .toEqual(0);
 
 
+        setStateActionName(["keti", "katu"], "GGG", gameStateJanski);
+        await checkAndFixPermutation();
+        await checkGame();
+
+        // both choose words
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "keti", word: "w71"})).body.code)
+            .toEqual(0);
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "katu", word: "w72"})).body.code)
+            .toEqual(0);
+
+        await checkChooseFromWords(["w7", "w71", "w72"]);
+
+        setState(StateEnum.ACTION_CHOOSE);
+        setWaiting(["keti", "katu"]);
+        await checkGame();
+
+        // keti guesses katu's, katu is too late.
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "keti", word: "w72"})).body.code)
+            .toEqual(0);
+
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+
+        setStateActionScores([
+                {chosen_word: "w71", guessed_word: "w72", name: "keti", score: 0},
+                {chosen_word: "w72", guessed_word: undefined, name: "katu", score: POINTS_FOR_MISLEADING_SOMEONE}],
+            "janski",
+            0,
+            0,
+            0,
+            POINTS_FOR_MISLEADING_SOMEONE);
+
+        await checkGame();
+
+        // janski has 2 * POINTS_WIN_ON_YOUR_TURN + 1 * POINTS_FOR_MISLEADING_SOMEONE + 3 * POINTS_CORRECT_GUESS points.
+        // needs one POINTS_CORRECT_GUESS and the game is over!
+
+        const score = 2 * POINTS_WIN_ON_YOUR_TURN + POINTS_FOR_MISLEADING_SOMEONE + 4 * POINTS_CORRECT_GUESS;
+        await Game.updateOne({code}, {$set: {"maxScore": score}});
+
+        // time passes
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+
+        setStateActionName(["janski", "katu"], "HHH", gameStateKeti);
+        await checkGame();
+
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "janski", word: "w81"})).body.code)
+            .toEqual(0);
+        expect((await request(app).post("/game/" + code + "/pickWord").send({user: "katu", word: "w82"})).body.code)
+            .toEqual(0);
+
+        await checkChooseFromWords(["w8", "w81", "w82"]);
+
+        setState(StateEnum.ACTION_CHOOSE);
+        setWaiting(["janski", "katu"]);
+        await checkGame();
+
+        // Janski guesses correctly!
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "janski", word: "w8"})).body.code)
+            .toEqual(0);
+        expect((await request(app).post("/game/" + code + "/guessWord").send({user: "katu", word: "w8"})).body.code)
+            .toEqual(0);
+
+
+        setState(StateEnum.FINISHED);
+        finishStage(POINTS_CORRECT_GUESS, 0, POINTS_CORRECT_GUESS)
+        setWaiting([]);
+        clearGuesses();
+        clearTurnName();
+        clearStateSeconds();
+        delete gameStateJanski.namePic;
+        delete gameStateKeti.namePic;
+        delete gameStateKatu.namePic;
+        delete gameStateJanski.remainingSec;
+        delete gameStateKeti.remainingSec;
+        delete gameStateKatu.remainingSec;
+        delete gameStateKeti.chooseWord;
+        delete gameStateJanski.chooseWord;
+        delete gameStateKatu.chooseWord;
+
+        await checkGame();
     });
 });

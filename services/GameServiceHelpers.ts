@@ -66,6 +66,25 @@ export class GameServiceHelpers {
                 });
             }
 
+            game = await Game.findOne({code: game.get("code")});
+            for (const player of game.get("players")) {
+                if (player.score >= game.get("maxScore")) {
+                    await Game.updateOne({code: game.get("code")}, {
+                        $set: {
+                            state: StateEnum.FINISHED,
+                            stageStartTime: Date.now(),
+                            "players.$[].waiting_for_action": false
+                        },
+                        $unset: {
+                            stageTillTime: "",
+                            "players.$[].stage": ""
+                        }
+                    });
+
+                    return;
+                }
+            }
+
             // Change state, delete stage
             await Game.updateOne({code: game.get("code")}, {
                 $set: {
@@ -116,15 +135,6 @@ export class GameServiceHelpers {
                 });
 
                 return game;
-            //     await Game.updateOne({code: game.get("code")}, {
-            //         $set: {
-            //             state: StateEnum.FINISHED
-            //         },
-            //         $unset: {
-            //             stageTillTime: ""
-            //         }
-            //     });
-            //
             }
 
             await Game.updateOne({code: game.get("code")}, {
