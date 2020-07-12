@@ -38,6 +38,7 @@ export class GameService {
                     }
                 }),
                 state: game.state,
+                maxScore: Number(game.maxScore),
                 word: game.players.find((e) => e.name === user)?.word,
                 waitingFor: game.players.filter((e) => e.waiting_for_action).map((e) => e.name)
         };
@@ -289,6 +290,7 @@ export interface BaseGameResponse {
         name: string;
         score: number;
     }>;
+    maxScore: number;
     state: StateEnum;
     word?: string;
     waitingFor?: string[];

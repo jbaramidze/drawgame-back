@@ -202,6 +202,7 @@ describe('Post Endpoints', () => {
         return {
             code,
             owner: "janski",
+            maxScore: 50,
             players: [{name: "janski", score: scores[0]}, {name: "keti", score: scores[1]}, {name: "katu", score: scores[2]}],
             state: StateEnum.WAITING_FOR_INITIAL_PIC,
             waitingFor: ["janski", "keti", "katu"],
@@ -209,28 +210,16 @@ describe('Post Endpoints', () => {
         }
     }
 
-    // it('Test skipping steps', async () => {
-    //     await addWord("w1", "ge");
-    //     const createGame = await request(app).post('/game').send({user: "janski"});
-    //     code = createGame.body.data.code;
-    //
-    //     await addWord("w2", "ge");
-    //     await request(app).post("/game/" + code + "/join").send({user: "keti"});
-    //
-    //     await addWord("w3", "ge");
-    //     await request(app).post("/game/" + code + "/join").send({user: "katu"});
-    // });
-
     it('Test main flow', async () => {
         await addWord("w1", "ge");
 
         // Create game by Janski
-        const createGame = await request(app).post('/game').send({user: "janski", score: "50"});
+        const createGame = await request(app).post('/game').send({user: "janski", score: 50});
         expect(createGame.body.code).toEqual(0);
 
         code = createGame.body.data.code;
 
-        gameStateJanski = {code, owner: "janski", players: [{name: "janski", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w1"};
+        gameStateJanski = {code, owner: "janski", maxScore: 50, players: [{name: "janski", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w1"};
         await checkGameJanski();
 
         await addWord("w2", "ge");
@@ -239,7 +228,7 @@ describe('Post Endpoints', () => {
         expect((await request(app).post("/game/" + code + "/join").send({user: "keti"})).body.code)
             .toEqual(0);
 
-        gameStateKeti = {code, owner: "janski", players: [{name: "janski", score: 0}, {name: "keti", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w2"};
+        gameStateKeti = {code, owner: "janski", maxScore: 50, players: [{name: "janski", score: 0}, {name: "keti", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w2"};
         gameStateJanski.players.push({name: "keti", score: 0});
 
         await checkGameKeti();
@@ -253,7 +242,7 @@ describe('Post Endpoints', () => {
         expect((await request(app).post("/game/" + code + "/join").send({user: "katu"})).body.code)
             .toEqual(0);
 
-        gameStateKatu = {code, owner: "janski", players: [{name: "janski", score: 0}, {name: "keti", score: 0}, {name: "katu", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w3"};
+        gameStateKatu = {code, owner: "janski", maxScore: 50, players: [{name: "janski", score: 0}, {name: "keti", score: 0}, {name: "katu", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w3"};
         gameStateKeti.players.push({name: "katu", score: 0});
         gameStateJanski.players.push({name: "katu", score: 0});
 
@@ -714,6 +703,10 @@ describe('Post Endpoints', () => {
 
         const score = 2 * POINTS_WIN_ON_YOUR_TURN + POINTS_FOR_MISLEADING_SOMEONE + 4 * POINTS_CORRECT_GUESS;
         await Game.updateOne({code}, {$set: {"maxScore": score}});
+
+        gameStateJanski.maxScore = score;
+        gameStateKeti.maxScore = score;
+        gameStateKatu.maxScore = score;
 
         // time passes
         await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
