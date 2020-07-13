@@ -4,6 +4,7 @@ import Stage from "../models/stage.model";
 import {Response, ResponseFail, ResponseOk} from "../utils/Response";
 import {GameServiceHelpers} from "./GameServiceHelpers";
 import {MAX_TIME_IN_ACTION_CHOOSE_SEC, MAX_TIME_IN_ACTION_NAME_SEC, MAX_TIME_IN_ACTION_SCORES_SEC} from "../index";
+const md5 = require('md5');
 
 export class GameService {
 
@@ -79,8 +80,9 @@ export class GameService {
                     namePic: this.helper.getCurrentTurnPic(gameDocument),
                     myTurn: this.helper.getCurrentTurnName(gameDocument) === user,
                     remainingSec: remainingSec,
-                    chooseWord: this.helper.applyRandomPermutation((await this.helper.getAllWordsToGuess(gameDocument))
-                        .map((w) => w.word))
+                    chooseWord: (await this.helper.getAllWordsToGuess(gameDocument))
+                        .map((w) => w.word)
+                        .sort((w1, w2) => md5(w1) < md5(w2) ? 1 : -1)
                 };
                 break;
 

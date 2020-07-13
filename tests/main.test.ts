@@ -65,16 +65,9 @@ describe('Post Endpoints', () => {
     }
 
     async function checkChooseFromWords(words: string[]) {
-        let game = await request(app).get("/game/" + code + "?user=janski").send();
-        expect(game.body.data.chooseWord.length).toEqual(words.length);
-        game = await request(app).get("/game/" + code + "?user=keti").send();
-        expect(game.body.data.chooseWord.length).toEqual(words.length);
-        game = await request(app).get("/game/" + code + "?user=katu").send();
-        expect(game.body.data.chooseWord.length).toEqual(words.length);
-
-        gameStateJanski.chooseWord = expect.arrayContaining(words);
-        gameStateKeti.chooseWord = expect.arrayContaining(words);
-        gameStateKatu.chooseWord = expect.arrayContaining(words);
+        gameStateJanski.chooseWord = words;
+        gameStateKeti.chooseWord = words;
+        gameStateKatu.chooseWord = words;
     }
 
     function setState(state: StateEnum) {
@@ -444,7 +437,7 @@ describe('Post Endpoints', () => {
         expect((await request(app).post("/game/" + code + "/pickWord").send({user: "keti", word: "w3"})).body.code)
             .toEqual(0);
 
-        await checkChooseFromWords(["w3", "ww22", "w3"]);
+        await checkChooseFromWords(["w3", "w3", "ww22"]);
 
         setState(StateEnum.ACTION_CHOOSE);
         setWaiting(["janski", "keti"]);
@@ -565,7 +558,7 @@ describe('Post Endpoints', () => {
         await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
 
         // double check sizes
-        await checkChooseFromWords(["w5", "w51"]);
+        await checkChooseFromWords(["w51", "w5"]);
 
         setState(StateEnum.ACTION_CHOOSE);
         setWaiting(["janski", "katu"]);
@@ -601,7 +594,7 @@ describe('Post Endpoints', () => {
         expect((await request(app).post("/game/" + code + "/pickWord").send({user: "keti", word: "w62"})).body.code)
             .toEqual(0);
 
-        await checkChooseFromWords(["w6", "w61", "w62"]);
+        await checkChooseFromWords(["w62", "w61", "w6"]);
 
         setState(StateEnum.ACTION_CHOOSE);
         setWaiting(["janski", "keti"]);
@@ -675,7 +668,7 @@ describe('Post Endpoints', () => {
         expect((await request(app).post("/game/" + code + "/pickWord").send({user: "katu", word: "w72"})).body.code)
             .toEqual(0);
 
-        await checkChooseFromWords(["w7", "w71", "w72"]);
+        await checkChooseFromWords(["w72", "w7", "w71"]);
 
         setState(StateEnum.ACTION_CHOOSE);
         setWaiting(["keti", "katu"]);
@@ -719,7 +712,7 @@ describe('Post Endpoints', () => {
         expect((await request(app).post("/game/" + code + "/pickWord").send({user: "katu", word: "w82"})).body.code)
             .toEqual(0);
 
-        await checkChooseFromWords(["w8", "w81", "w82"]);
+        await checkChooseFromWords(["w81", "w82", "w8"]);
 
         setState(StateEnum.ACTION_CHOOSE);
         setWaiting(["janski", "katu"]);
