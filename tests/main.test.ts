@@ -203,11 +203,15 @@ describe('Post Endpoints', () => {
         }
     }
 
+
     it('Test main flow', async () => {
+        let createGame = await request(app).post('/game').send({user: "janski", score: 50, lang: "ge"});
+        expect(createGame.status).toEqual(422);
+
         await addWord("w1", "ge");
 
         // Create game by Janski
-        const createGame = await request(app).post('/game').send({user: "janski", score: 50});
+        createGame = await request(app).post('/game').send({user: "janski", score: 50, lang: "ge"});
         expect(createGame.body.code).toEqual(0);
 
         code = createGame.body.data.code;

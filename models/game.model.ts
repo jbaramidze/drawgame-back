@@ -4,6 +4,7 @@ const gameSchema = new mongoose.Schema({
     code: String,
     maxScore: String,
     owner: String,
+    lang: String,
     players: [{
         name: String,
         word: String,

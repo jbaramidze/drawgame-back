@@ -9,6 +9,7 @@ import {
     POINTS_FOR_MISLEADING_SOMEONE,
     POINTS_WIN_ON_YOUR_TURN
 } from "../index";
+import {DGError} from "../common/DGError";
 
 export class GameServiceHelpers {
 
@@ -104,6 +105,7 @@ export class GameServiceHelpers {
             if (((stage + 1) % playersNum) === 0) {
                 const newWords = await this.getNNonexistentWords(
                     game.get("code"),
+                    game.get("lang"),
                     game.get("players").length,
                     game.get("allUsedWords")
                     );
@@ -224,18 +226,21 @@ export class GameServiceHelpers {
         return count;
     }
 
-    public async getNNonexistentWords(code: string, count: number, excludeWords: string[] = []) {
+    public async getNNonexistentWords(code: string, lang: string, count: number, excludeWords: string[] = []) {
         const words: string[] = [];
         for (let i = 0; i < count; i++) {
-            words.push(await this.getNonexistentWord(code, [...excludeWords, ...words]));
+            words.push(await this.getNonexistentWord(code, lang, [...excludeWords, ...words]));
         }
 
         return words;
     }
 
-    public async getNonexistentWord(code: string, excludeWords: string[] = []) {
+    public async getNonexistentWord(code: string, lang: string, excludeWords: string[] = []) {
         let triesLeft = 1000;
-        const count = await Word.countDocuments();
+        const count = await Word.countDocuments({lang});
+        if (count === 0) {
+            throw new DGError("No words found!");
+        }
         let word;
         do {
             triesLeft--;
@@ -244,7 +249,7 @@ export class GameServiceHelpers {
                 return "";
             }
             const index = Math.floor(Math.random() * count);
-            const words = await Word.find();
+            const words = await Word.find({lang});
             word = words[index].get("word");
         } while ((await Game.find({"$and": [{code}, {"players.word": word}]})).length > 0 ||
                   excludeWords.find((w) => w === word));
