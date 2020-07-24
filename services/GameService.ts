@@ -97,6 +97,7 @@ export class GameService {
                     namePic: this.helper.getCurrentTurnPic(gameDocument),
                     turn: turnName,
                     turnScore: lastStage[0].get("guesses").find((g) => g.name === turnName).score,
+                    turnWord: lastStage[0].get("word"),
                     guesses: lastStage[0].get("guesses")
                         .filter((g) => g.name !== lastStage[0].get("name"))
                         .map((g) => {
@@ -333,6 +334,7 @@ export interface ActionScoresGameResponse extends BaseGameResponse {
     remainingSec: number;
     turn: string;
     turnScore: number;
+    turnWord: string;
     namePic: string;
     guesses: Array<{
         name: string;

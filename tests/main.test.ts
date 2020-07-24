@@ -112,13 +112,16 @@ describe('Post Endpoints', () => {
         gameStateKatu.waitingFor = waiting;
     }
 
-    function setTurnName(turn: string, score: number) {
+    function setTurnName(turn: string, word: string, score: number) {
         gameStateJanski.turn = turn;
         gameStateKatu.turn = turn;
         gameStateKeti.turn = turn;
         gameStateJanski.turnScore = score;
         gameStateKatu.turnScore = score;
         gameStateKeti.turnScore = score;
+        gameStateJanski.turnWord = word;
+        gameStateKatu.turnWord = word;
+        gameStateKeti.turnWord = word;
     }
 
     function clearTurnName() {
@@ -128,6 +131,9 @@ describe('Post Endpoints', () => {
         delete gameStateJanski.turnScore;
         delete gameStateKatu.turnScore;
         delete gameStateKeti.turnScore;
+        delete gameStateJanski.turnWord;
+        delete gameStateKatu.turnWord;
+        delete gameStateKeti.turnWord;
     }
 
     function clearTurn() {
@@ -169,10 +175,10 @@ describe('Post Endpoints', () => {
         gameStateKatu.remainingSec = expect.any(Number);
     }
 
-    function setStateActionScores(guesses: any, tunName: string, turnScore: number, p1: number, p2: number, p3: number) {
+    function setStateActionScores(guesses: any, tunName: string, turnWord: string, turnScore: number, p1: number, p2: number, p3: number) {
         setState(StateEnum.ACTION_SCORES);
         setGuesses(guesses);
-        setTurnName(tunName, turnScore)
+        setTurnName(tunName, turnWord, turnScore)
         setWaiting([]);
         finishStage(p1, p2, p3);
         setStateSeconds(MAX_TIME_IN_ACTION_SCORES_SEC);
@@ -352,6 +358,7 @@ describe('Post Endpoints', () => {
             {chosen_word: "ww1", guessed_word: "w1", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE},
             {chosen_word: "ww2", guessed_word: "ww1", name: "katu", score: 0}],
             "janski",
+            "w1",
             POINTS_WIN_ON_YOUR_TURN,
             POINTS_WIN_ON_YOUR_TURN,
             POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE,
@@ -412,6 +419,7 @@ describe('Post Endpoints', () => {
             {chosen_word: "ww11", guessed_word: "ww11", name: "janski", score: POINTS_FOR_MISLEADING_SOMEONE},
             {chosen_word: "ww11", guessed_word: "ww11", name: "katu", score: POINTS_FOR_MISLEADING_SOMEONE}],
             "keti",
+            "w2",
             0,
             POINTS_FOR_MISLEADING_SOMEONE,
             0,
@@ -462,6 +470,7 @@ describe('Post Endpoints', () => {
             {chosen_word: "ww22", guessed_word: "w3", name: "janski", score: POINTS_CORRECT_GUESS},
             {chosen_word: "w3", guessed_word: "w3", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE}],
             "katu",
+            "w3",
             0,
             POINTS_CORRECT_GUESS,
             POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE,
@@ -541,6 +550,7 @@ describe('Post Endpoints', () => {
                 {chosen_word: "w41", guessed_word: "w4", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE},
                 {chosen_word: undefined, guessed_word: "w41", name: "katu", score: 0}],
             "janski",
+            "w4",
             POINTS_WIN_ON_YOUR_TURN,
             POINTS_WIN_ON_YOUR_TURN,
             POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE,
@@ -578,6 +588,7 @@ describe('Post Endpoints', () => {
                 {chosen_word: undefined, guessed_word: "w5", name: "janski", score: POINTS_CORRECT_GUESS},
                 {chosen_word: "w51", guessed_word: "w5", name: "katu", score: POINTS_CORRECT_GUESS}],
             "keti",
+            "w5",
             0,
             POINTS_CORRECT_GUESS,
             0,
@@ -614,6 +625,7 @@ describe('Post Endpoints', () => {
                 {chosen_word: "w61", guessed_word: "w6", name: "janski", score: POINTS_CORRECT_GUESS},
                 {chosen_word: "w62", guessed_word: undefined, name: "keti", score: 0}],
             "katu",
+            "w6",
             POINTS_WIN_ON_YOUR_TURN,
             POINTS_CORRECT_GUESS,
             0,
@@ -688,6 +700,7 @@ describe('Post Endpoints', () => {
                 {chosen_word: "w71", guessed_word: "w72", name: "keti", score: 0},
                 {chosen_word: "w72", guessed_word: undefined, name: "katu", score: POINTS_FOR_MISLEADING_SOMEONE}],
             "janski",
+            "w7",
             0,
             0,
             0,
