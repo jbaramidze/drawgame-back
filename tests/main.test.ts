@@ -197,7 +197,8 @@ describe('Post Endpoints', () => {
         await Game.updateOne({code}, {$set: {"players.0.waiting_for_action": false}});
     }
 
-    function getInitialState(scores: number[], words: string[]) {
+    function getInitialState(words: string[]) {
+        const scores = gameStateJanski.players.map((i) => i.score);
         return {
             code,
             owner: "janski",
@@ -471,10 +472,10 @@ describe('Post Endpoints', () => {
             {chosen_word: "w3", guessed_word: "w3", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE}],
             "katu",
             "w3",
-            0,
+            POINTS_WIN_ON_YOUR_TURN,
             POINTS_CORRECT_GUESS,
             POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE,
-            0);
+            POINTS_WIN_ON_YOUR_TURN);
         await checkGame();
 
         // pass time.
@@ -486,9 +487,9 @@ describe('Post Endpoints', () => {
          *
          **************************************/
 
-        gameStateJanski = getInitialState([9, 8, 1], ["w4", "w5", "w6"]);
-        gameStateKeti = getInitialState([9, 8, 1], ["w4", "w5", "w6"]);
-        gameStateKatu = getInitialState([9, 8, 1], ["w4", "w5", "w6"]);
+        gameStateJanski = getInitialState(["w4", "w5", "w6"]);
+        gameStateKeti = getInitialState(["w4", "w5", "w6"]);
+        gameStateKatu = getInitialState(["w4", "w5", "w6"]);
 
         await addWord("w4", "ge");
         await addWord("w5", "ge");
@@ -589,9 +590,9 @@ describe('Post Endpoints', () => {
                 {chosen_word: "w51", guessed_word: "w5", name: "katu", score: POINTS_CORRECT_GUESS}],
             "keti",
             "w5",
-            0,
+            POINTS_WIN_ON_YOUR_TURN,
             POINTS_CORRECT_GUESS,
-            0,
+            POINTS_WIN_ON_YOUR_TURN,
             POINTS_CORRECT_GUESS);
 
         await checkGame();
@@ -641,9 +642,9 @@ describe('Post Endpoints', () => {
          *
          **************************************/
 
-        gameStateJanski = getInitialState([20, 12, 9], ["w7", "w8", "w9"]);
-        gameStateKeti = getInitialState([20, 12, 9], ["w7", "w8", "w9"]);
-        gameStateKatu = getInitialState([20, 12, 9], ["w7", "w8", "w9"]);
+        gameStateJanski = getInitialState(["w7", "w8", "w9"]);
+        gameStateKeti = getInitialState(["w7", "w8", "w9"]);
+        gameStateKatu = getInitialState(["w7", "w8", "w9"]);
 
         await addWord("w7", "ge");
         await addWord("w8", "ge");
@@ -743,7 +744,7 @@ describe('Post Endpoints', () => {
 
 
         setState(StateEnum.FINISHED);
-        finishStage(POINTS_CORRECT_GUESS, 0, POINTS_CORRECT_GUESS)
+        finishStage(POINTS_CORRECT_GUESS, POINTS_WIN_ON_YOUR_TURN, POINTS_CORRECT_GUESS)
         setWaiting([]);
         clearGuesses();
         clearTurnName();

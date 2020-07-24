@@ -187,7 +187,7 @@ export class GameServiceHelpers {
         const currentTurnName = this.getCurrentTurnName(game);
         const currentTurnWord = this.getCurrentTurnWord(game);
         let scoreOfTurnPlayer = 0;
-        if (correctGuessers !== 0 && correctGuessers !== totalPlayers - 1) {
+        if (correctGuessers !== 0 /*&& correctGuessers !== totalPlayers - 1*/) {
             scoreOfTurnPlayer = POINTS_WIN_ON_YOUR_TURN;
         }
 
