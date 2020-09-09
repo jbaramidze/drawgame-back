@@ -472,10 +472,10 @@ describe('Post Endpoints', () => {
             {chosen_word: "w3", guessed_word: "w3", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE}],
             "katu",
             "w3",
-            POINTS_WIN_ON_YOUR_TURN,
+            0,
             POINTS_CORRECT_GUESS,
             POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE,
-            POINTS_WIN_ON_YOUR_TURN);
+            0);
         await checkGame();
 
         // pass time.
@@ -590,9 +590,9 @@ describe('Post Endpoints', () => {
                 {chosen_word: "w51", guessed_word: "w5", name: "katu", score: POINTS_CORRECT_GUESS}],
             "keti",
             "w5",
-            POINTS_WIN_ON_YOUR_TURN,
+            0,
             POINTS_CORRECT_GUESS,
-            POINTS_WIN_ON_YOUR_TURN,
+            0,
             POINTS_CORRECT_GUESS);
 
         await checkGame();
@@ -744,7 +744,7 @@ describe('Post Endpoints', () => {
 
 
         setState(StateEnum.FINISHED);
-        finishStage(POINTS_CORRECT_GUESS, POINTS_WIN_ON_YOUR_TURN, POINTS_CORRECT_GUESS)
+        finishStage(POINTS_CORRECT_GUESS, 0, POINTS_CORRECT_GUESS)
         setWaiting([]);
         clearGuesses();
         clearTurnName();
