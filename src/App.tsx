@@ -45,13 +45,11 @@ export function App() {
             } else if (response.data.data.state === StateEnum.FINISHED) {
                 setLink("/game/finished");
             }
+
+            setTimeout(poll, 800);
         };
 
-        poll().then();
-        const interval = setInterval(poll, 800);
-        return () => {
-            clearInterval(interval);
-        }
+        poll()
     }, [code, name]);
 
     // const game2: GameResponse = {
