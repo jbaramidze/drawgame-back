@@ -27,7 +27,7 @@
   },
   "scripts": {
     "test": "cd server && is_test=true jest",
-    "start": "cd server && MONGO_ADDR=mongodb://u:p@localhost:27099 nodemon index.js",
+    "start": "cd server && nodemon index.js",
     "build": "react-scripts build && cd server && ./node_modules/typescript/bin/tsc",
     "devBE": "(cd server && ./node_modules/typescript/bin/tsc -w) & (cd server && MONGO_ADDR=mongodb://u:p@localhost:27099 nodemon)",
     "devFE": "PORT=2000 REACT_APP_BEURL=http://localhost:3000 react-scripts start"
