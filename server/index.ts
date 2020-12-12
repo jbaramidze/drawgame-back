@@ -13,7 +13,7 @@ export const MAX_TIME_IN_ACTION_SCORES_SEC = 20;
 if (process.env.is_test) {
     app.listen(3001, () => console.log(`Listening at http://localhost:3001`));
 } else {
-    mongoose.connect(`${process.env.MONGO_ADDR}`, {useNewUrlParser: true, useUnifiedTopology: true})
+    mongoose.connect(process.env.MONGO_ADDR, {useNewUrlParser: true, useUnifiedTopology: true})
         .then(() => {
             app.listen(3000, () => console.log(`Listening at http://localhost:3000`));
         })
