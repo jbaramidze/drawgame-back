@@ -1,0 +1,42 @@
+{
+  "name": "drawgame-back",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "is_test=true jest",
+    "tsc": "./node_modules/typescript/bin/tsc -w",
+    "start": "nodemon",
+    "startProd": "node index.js",
+    "push": "docker build -t jbaramidze/drawgame-backend . && docker push jbaramidze/drawgame-backend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ]
+  },
+  "dependencies": {
+    "@types/body-parser": "^1.19.0",
+    "@types/cors": "^2.8.6",
+    "@types/express": "^4.17.6",
+    "@types/express-validator": "^3.0.0",
+    "@types/jest": "^25.2.1",
+    "@types/mongoose": "^5.7.10",
+    "@types/node": "^14.0.12",
+    "@types/supertest": "^2.0.8",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "express-validator": "^6.4.0",
+    "jest": "^25.3.0",
+    "jest-extended": "^0.11.5",
+    "md5": "^2.2.1",
+    "mongoose": "^5.9.7",
+    "supertest": "^4.0.2",
+    "ts-jest": "^25.4.0",
+    "typescript": "^3.8.3"
+  }
+}
