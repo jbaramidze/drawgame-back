@@ -12,7 +12,7 @@ export function ChooseComponent(props: Props) {
 
     const click = async (e) => {
         setClicked(e.target.name);
-        const response = await axios.post(BEURL + "/game/" + props.game.code + "/guessWord", {user: props.name, word: e.target.name});
+        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/guessWord", {user: props.name, word: e.target.name});
         if (response.data.code < 0) {
             setClicked("");
             setError(response.data.code);

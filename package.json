@@ -26,11 +26,11 @@
     "typescript": "^3.9.6"
   },
   "scripts": {
-    "start": "PORT=2000 react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "push": "docker build -t jbaramidze/drawgame-frontend-prod . && docker push jbaramidze/drawgame-frontend-prod"
+    "test": "cd server && is_test=true jest",
+    "start": "cd server && MONGO_ADDR=mongodb://u:p@localhost:27099 nodemon index.js",
+    "build": "react-scripts build && cd server && ./node_modules/typescript/bin/tsc",
+    "devBE": "(cd server && ./node_modules/typescript/bin/tsc -w) & (cd server && MONGO_ADDR=mongodb://u:p@localhost:27099 nodemon)",
+    "devFE": "PORT=2000 REACT_APP_BEURL=http://localhost:3000 react-scripts start"
   },
   "eslintConfig": {
     "extends": "react-app",

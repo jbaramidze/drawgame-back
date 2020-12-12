@@ -11,7 +11,7 @@ import {NameComponent} from "./components/nameComponent";
 import {ScoresComponent} from "./components/scoresComponent";
 import {FinishedComponent} from "./components/finishedComponent";
 
-export const BEURL = process.env.REACT_APP_BE_ADDR;
+export const BEURL = process.env.REACT_APP_BEURL || "";
 
 export const LangContext = React.createContext('en');
 
@@ -29,7 +29,7 @@ export function App() {
         }
 
         const poll = async () => {
-            const response = await axios.get(BEURL + "/game/" + code+"?user=" + name);
+            const response = await axios.get(BEURL + "/api/game/" + code+"?user=" + name);
 
             setGame(response.data.data);
             if (response.data.data.state === StateEnum.CREATED) {

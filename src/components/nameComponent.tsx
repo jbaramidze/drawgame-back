@@ -13,7 +13,7 @@ export function NameComponent(props: Props) {
 
     const nameThePic = async () => {
         setSent(true);
-        const response = await axios.post(BEURL + "/game/" + props.game.code + "/pickWord", {user: props.name, word: word});
+        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/pickWord", {user: props.name, word: word});
         if (response.data.code < 0) {
             setSent(false);
             setError(response.data.code);

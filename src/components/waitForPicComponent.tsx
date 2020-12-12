@@ -22,7 +22,7 @@ export function WaitForPicComponent(props: Props) {
         } catch (e) {
         }
         setSent(true);
-        const response = await axios.post(BEURL + "/game/" + props.game.code + "/1/savepic", {
+        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/1/savepic", {
             user: props.name,
             pic: canvasRef.current?.getSaveData()
         });

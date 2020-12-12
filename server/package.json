@@ -3,13 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "is_test=true jest",
-    "tsc": "./node_modules/typescript/bin/tsc -w",
-    "start": "nodemon",
-    "startProd": "node index.js",
-    "push": "docker build -t jbaramidze/drawgame-backend . && docker push jbaramidze/drawgame-backend"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",

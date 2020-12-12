@@ -23,7 +23,7 @@ export function WelcomeComponent(props) {
 
     const join = async () => {
         setSent(true);
-        const response = await axios.post(BEURL + "/game/" + codeValue + "/join", {user: props.name});
+        const response = await axios.post(BEURL + "/api/game/" + codeValue + "/join", {user: props.name});
         if (response.data.code < 0) {
             setSent(false);
             setError(response.data.code);
@@ -37,7 +37,7 @@ export function WelcomeComponent(props) {
 
     const create = async () => {
         setSent(true);
-        const response = await axios.post(BEURL + "/game/", {user: props.name, score: score.value, lang: l});
+        const response = await axios.post(BEURL + "/api/game/", {user: props.name, score: score.value, lang: l});
         const code = response.data.data.code;
         props.setCode(code);
         sessionStorage.setItem("code", code);
