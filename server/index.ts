@@ -15,7 +15,8 @@ if (process.env.is_test) {
 } else {
     mongoose.connect(process.env.MONGO_ADDR, {useNewUrlParser: true, useUnifiedTopology: true})
         .then(() => {
-            app.listen(3000, () => console.log(`Listening at http://localhost:3000`));
+            const port = process.env.PORT || 3000
+            app.listen(port, () => console.log(`Listening at http://localhost:${port}`));
         })
         .catch((e) => {
             console.log("ERROR! Failed connecting to mongoose" + JSON.stringify(e));
