@@ -29,7 +29,14 @@ export function App() {
         }
 
         const poll = async () => {
-            const response = await axios.get(BEURL + "/api/game/" + code+"?user=" + name);
+            let response;
+            try {
+                response = await axios.get(BEURL + "/api/game/" + code+"?user=" + name);
+            } catch (e) {
+                // Retry
+                setTimeout(poll, 1500);
+                return;
+            }
 
             setGame(response.data.data);
             if (response.data.data.state === StateEnum.CREATED) {

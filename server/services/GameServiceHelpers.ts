@@ -10,8 +10,12 @@ import {
     POINTS_WIN_ON_YOUR_TURN
 } from "../index";
 import {DGError} from "../common/DGError";
+import { Logger } from "./Logger";
+import { Context } from "./Context";
 
 export class GameServiceHelpers {
+
+    private readonly logger = new Logger("GameServiceHelpers");
 
     public applyPermutation(array: string[], permutation: number[]) {
         return new Array(array.length).fill(-1).map((_, i) => array[permutation[i]])
@@ -21,27 +25,30 @@ export class GameServiceHelpers {
         return this.applyPermutation(array, this.randomPermutation(array.length));
     }
 
-    public async checkAndAdvanceState(game: MongooseDocument, force?: boolean) {
+    public async checkAndAdvanceState(ctx: Context, game: MongooseDocument, force?: boolean) {
         if (!force && game.get("players").find((p) => p.waiting_for_action)) {
             return
         }
 
         if (game.get("state") === StateEnum.WAITING_FOR_INITIAL_PIC) {
             const count = game.get("players").length;
+            const permutation = this.randomPermutation(count);
             await Game.updateOne({code: game.get("code")}, {
                 $set: {
                     state: StateEnum.ACTION_NAME,
                     stageStartTime: Date.now(),
                     stageTillTime: Date.now() + MAX_TIME_IN_ACTION_NAME_SEC * 1000,
-                    permutation: this.randomPermutation(count),
+                    permutation,
                     "players.$[].waiting_for_action": true
                 }
             });
 
             // FIXME: Can we do in 1 go?
             game = await Game.findOne({code: game.get("code")});
-            const key = `players.${this.getCurrentTurnId(game)}.waiting_for_action`;
+            const turn = this.getCurrentTurnId(game);
+            const key = `players.${turn}.waiting_for_action`;
             await Game.updateOne({code: game.get("code")}, {$set: {[key]: false}});
+            this.logger.info(ctx, "Moving to state ACTION_NAME from WAITING_FOR_INITIAL_PIC", {permutation, turn});
         } else if (game.get("state") === StateEnum.ACTION_NAME) {
             await Game.updateOne({code: game.get("code")}, {
                 $set: {
@@ -52,8 +59,10 @@ export class GameServiceHelpers {
                 }
             });
 
-            const key = `players.${this.getCurrentTurnId(game)}.waiting_for_action`;
+            const turn = this.getCurrentTurnId(game);
+            const key = `players.${turn}.waiting_for_action`;
             await Game.updateOne({code: game.get("code")}, {$set: {[key]: false}});
+            this.logger.info(ctx, "Moving to state ACTION_CHOOSE", {turn});
         } else if (game.get("state") === StateEnum.ACTION_CHOOSE) {
             const scores = this.getScoresMap(game);
             await this.createStage(game, scores);
@@ -70,6 +79,7 @@ export class GameServiceHelpers {
             game = await Game.findOne({code: game.get("code")});
             for (const player of game.get("players")) {
                 if (player.score >= game.get("maxScore")) {
+                    this.logger.info(ctx, "Moving to state FINISHED");
                     await Game.updateOne({code: game.get("code")}, {
                         $set: {
                             state: StateEnum.FINISHED,
@@ -87,6 +97,7 @@ export class GameServiceHelpers {
             }
 
             // Change state, delete stage
+            this.logger.info(ctx, "Moving to state ACTION_SCORES");
             await Game.updateOne({code: game.get("code")}, {
                 $set: {
                     "state": StateEnum.ACTION_SCORES,
@@ -118,6 +129,7 @@ export class GameServiceHelpers {
                     unset[`players.${i}.pic`] = "";
                 }
 
+                this.logger.info(ctx, "Moving to state WAITING_FOR_INITIAL_PIC");
                 await Game.updateOne({code: game.get("code")}, {
                     $set: {
                         state: StateEnum.WAITING_FOR_INITIAL_PIC,
@@ -139,6 +151,7 @@ export class GameServiceHelpers {
                 return game;
             }
 
+            this.logger.info(ctx, "Moving to state ACTION_NAME from scores");
             await Game.updateOne({code: game.get("code")}, {
                 $set: {
                     state: StateEnum.ACTION_NAME,

@@ -1,4 +1,4 @@
-import express, { Router } from "express"
+import express from "express"
 import cors from "cors"
 import {GameRouter} from "./routers/GameRouter"
 import {GameService} from "./services/GameService";

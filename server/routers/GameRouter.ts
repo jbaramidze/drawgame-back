@@ -2,16 +2,20 @@ import express from "express"
 import {body, validationResult, param, query} from "express-validator";
 import {GameService} from "../services/GameService";
 import {DGError} from "../common/DGError";
+import { Context } from "../services/Context";
+import { Logger } from "../services/Logger";
 
 export class GameRouter {
     private readonly router = express.Router();
+    private readonly logger = new Logger("GameRouter");
 
-    private async withErrorProcessing<T>(res: any, promise: Promise<T>): Promise<T> {
+    private async withErrorProcessing<T>(ctx: Context, promise: Promise<T>): Promise<T> {
         try {
-            return res.json(await promise);
+            return ctx.getRes().json(await promise);
         } catch (error) {
             if (error instanceof DGError) {
-                res.status(422).json({errors: error.message});
+                this.logger.warning(ctx, `Returning error ${error.message}`)
+                ctx.getRes().status(422).json({errors: error.message});
                 return ;
             } else {
                 throw error;
@@ -20,19 +24,19 @@ export class GameRouter {
     }
 
     constructor(private readonly gameService: GameService) {
-
         this.router.post("/",
             [body('user').isString().notEmpty(),
                      body('lang').isString().notEmpty(),
                      body('score').isNumeric().notEmpty()],
             // @ts-ignore
             async (req, res) => {
-                if (!this.validate(req, res)) {
+                const ctx = new Context(req, res);
+                if (!this.validate(ctx)) {
                     return;
                 }
 
                 // FIXME: why do we need Numeric() if it has isNumeric?
-                await this.withErrorProcessing(res, this.gameService.newGame(
+                await this.withErrorProcessing(res, this.gameService.newGame(ctx,
                     req.body.user,
                     Number(req.body.score),
                     req.body.lang));
@@ -43,11 +47,11 @@ export class GameRouter {
                       query("user").isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {
-                if (!this.validate(req, res)) {
+                const ctx = new Context(req, res);
+                if (!this.validate(ctx)) {
                     return;
                 }
-
-                await this.withErrorProcessing(res, this.gameService.getGame(
+                await this.withErrorProcessing(ctx, this.gameService.getGame(ctx,
                     req.params.code,
                     req.query.user
                 ));
@@ -57,11 +61,12 @@ export class GameRouter {
             [body('user').isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {
-                if (!this.validate(req, res)) {
+                const ctx = new Context(req, res);
+                if (!this.validate(ctx)) {
                     return;
                 }
 
-                await this.withErrorProcessing(res, this.gameService.joinGame(
+                await this.withErrorProcessing(ctx, this.gameService.joinGame(ctx,
                     req.params.code,
                     req.body.user
                 ));
@@ -71,11 +76,12 @@ export class GameRouter {
             [body("user").isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {
-                if (!this.validate(req, res)) {
+                const ctx = new Context(req, res);
+                if (!this.validate(ctx)) {
                     return;
                 }
 
-                await this.withErrorProcessing(res, this.gameService.startGame(
+                await this.withErrorProcessing(ctx, this.gameService.startGame(ctx,
                     req.params.code,
                     req.body.user
                 ));
@@ -87,11 +93,12 @@ export class GameRouter {
                       body('pic').isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {
-                if (!this.validate(req, res)) {
+                const ctx = new Context(req, res);
+                if (!this.validate(ctx)) {
                     return;
                 }
 
-                await this.withErrorProcessing(res, this.gameService.savePic(
+                await this.withErrorProcessing(ctx, this.gameService.savePic(ctx,
                     req.params.code,
                     req.body.user,
                     req.body.pic
@@ -103,11 +110,12 @@ export class GameRouter {
                 body('word').isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {
-                if (!this.validate(req, res)) {
+                const ctx = new Context(req, res);
+                if (!this.validate(ctx)) {
                     return;
                 }
 
-                await this.withErrorProcessing(res, this.gameService.pickWord(
+                await this.withErrorProcessing(ctx, this.gameService.pickWord(ctx,
                     req.params.code,
                     req.body.user,
                     req.body.word
@@ -119,11 +127,12 @@ export class GameRouter {
                 body('word').isString().notEmpty()],
             // @ts-ignore
             async (req, res) => {
-                if (!this.validate(req, res)) {
+                const ctx = new Context(req, res);
+                if (!this.validate(ctx)) {
                     return;
                 }
 
-                await this.withErrorProcessing(res, this.gameService.guessWord(
+                await this.withErrorProcessing(ctx, this.gameService.guessWord(ctx,
                     req.params.code,
                     req.body.user,
                     req.body.word
@@ -131,10 +140,10 @@ export class GameRouter {
             });
     }
 
-    private validate(req: any, res: any) {
-        const errors = validationResult(req);
+    private validate(ctx: Context) {
+        const errors = validationResult(ctx.getReq());
         if (!errors.isEmpty()) {
-            res.status(422).json({errors: errors.array()});
+            ctx.getRes().status(422).json({errors: errors.array()});
             return false;
         }
 
