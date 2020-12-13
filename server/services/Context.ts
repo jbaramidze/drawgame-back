@@ -14,9 +14,9 @@ export class Context {
     public getPrefix(): string {
         // Pad nicely
         let method: string = this.req.method;
-        while(method.length < 5) {
+        while(method.length < 4) {
             method += " ";
         }
-        return `[${new Date().toISOString()}] ${method}: ${decodeURI(this.req.baseUrl + this.req.url)}`;
+        return `${method}: ${decodeURI(this.req.baseUrl + this.req.url)}`;
     }
 }

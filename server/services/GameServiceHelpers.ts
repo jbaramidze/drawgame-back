@@ -231,7 +231,7 @@ export class GameServiceHelpers {
     public getCorrectGuessers(game: MongooseDocument) {
         const word = this.getCurrentTurnWord(game);
         let count = 0;
-        game.toObject().players.map((p) => {
+        game.toObject().players.forEach((p) => {
             if (p.stage && p.stage.guessed_word === word) {
                 count++;
             }
@@ -266,6 +266,7 @@ export class GameServiceHelpers {
             const words = await Word.find({lang});
             word = words[index].get("word");
         } while ((await Game.find({"$and": [{code}, {"players.word": word}]})).length > 0 ||
+                  // eslint-disable-next-line no-loop-func
                   excludeWords.find((w) => w === word));
 
         return word;

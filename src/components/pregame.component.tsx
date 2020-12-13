@@ -6,14 +6,17 @@ import {i8n} from "../utils/I8n";
 export function PregameComponent(props: Props) {
     const l = useContext(LangContext);
     const [error, setError] = useState(0);
+    const [sent, setSent] = useState(false);
 
     if (!props.game || props.game.state !== StateEnum.CREATED) {
         return (<div/>);
     }
 
     const startGame = async () => {
+        setSent(true);
         const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/start", {user: props.name});
         if (response.data.code < 0) {
+            setSent(false);
             setError(response.data.code);
         } else {
             setError(0);
@@ -41,9 +44,8 @@ export function PregameComponent(props: Props) {
                 <button
                     onClick={startGame}
                     style={{marginTop: "15px"}}
-                    type="button"
                     className="btn btn-primary btn-lg btn-block"
-                    disabled={props.game.players.length < 2}
+                    disabled={props.game.players.length < 2 || sent}
                 >
                     {i8n(l, "start")}!
                 </button>

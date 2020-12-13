@@ -53,6 +53,12 @@ export function App() {
                 setLink("/game/finished");
             }
 
+            if (response.data.data.state === StateEnum.FINISHED) {
+                sessionStorage.removeItem("code");
+                sessionStorage.removeItem("name");
+                return;
+            }
+
             setTimeout(poll, 800);
         };
 
