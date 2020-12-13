@@ -21,7 +21,6 @@ export class GameService {
             return ResponseFail(-1);
         }
 
-
         const game = gameDocument.toObject();
         if (!game.players.find((p) => p.name === user)) {
             return ResponseFail(-2);
@@ -163,6 +162,7 @@ export class GameService {
 
         const word = await this.helper.getNonexistentWord(code, game.get("lang"));
         await Game.updateOne({code}, {$push: {players: this.helper.getPlayer(user, word)}});
+        this.logger.info(ctx, `Joined ${user} with word ${word}`);
         return ResponseOk(null);
     }
 
@@ -186,6 +186,7 @@ export class GameService {
             stageStartTime: Date.now(),
             "players.$[].waiting_for_action": true
         }});
+        this.logger.info(ctx, `Game started!`);
         return ResponseOk(null);
     }
 
@@ -211,6 +212,7 @@ export class GameService {
 
         game = await Game.findOne({code});
         await this.helper.checkAndAdvanceState(ctx, game);
+        this.logger.info(ctx, `${user} saved pic.`);
         return ResponseOk(null);
     }
 
@@ -242,6 +244,7 @@ export class GameService {
 
         game = await Game.findOne({code});
         await this.helper.checkAndAdvanceState(ctx, game);
+        this.logger.info(ctx, `${player} picked a word ${word}.`);
         return ResponseOk(null);
     }
 
@@ -284,6 +287,7 @@ export class GameService {
 
         game = await Game.findOne({code});
         await this.helper.checkAndAdvanceState(ctx, game);
+        this.logger.info(ctx, `${player} guessed a word ${word}.`);
         return ResponseOk(null);
     }
 }

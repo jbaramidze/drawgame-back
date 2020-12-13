@@ -4,17 +4,22 @@ import {GameService} from "../services/GameService";
 import {DGError} from "../common/DGError";
 import { Context } from "../services/Context";
 import { Logger } from "../services/Logger";
+import {Response} from "../utils/Response"
 
 export class GameRouter {
     private readonly router = express.Router();
     private readonly logger = new Logger("GameRouter");
 
-    private async withErrorProcessing<T>(ctx: Context, promise: Promise<T>): Promise<T> {
+    private async withErrorProcessing<T>(ctx: Context, promise: Promise<Response<T>>): Promise<Response<T>> {
         try {
-            return ctx.getRes().json(await promise);
+            const data = await promise;
+            if (data.code !== 0) {
+                this.logger.warning(ctx, `Returning code ${data.code}`)
+            }
+            return ctx.getRes().json(data);
         } catch (error) {
             if (error instanceof DGError) {
-                this.logger.warning(ctx, `Returning error ${error.message}`)
+                this.logger.warning(ctx, `Returning ${error.message}`)
                 ctx.getRes().status(422).json({errors: error.message});
                 return ;
             } else {
@@ -36,7 +41,7 @@ export class GameRouter {
                 }
 
                 // FIXME: why do we need Numeric() if it has isNumeric?
-                await this.withErrorProcessing(res, this.gameService.newGame(ctx,
+                await this.withErrorProcessing(ctx, this.gameService.newGame(ctx,
                     req.body.user,
                     Number(req.body.score),
                     req.body.lang));

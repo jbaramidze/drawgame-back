@@ -129,7 +129,7 @@ export class GameServiceHelpers {
                     unset[`players.${i}.pic`] = "";
                 }
 
-                this.logger.info(ctx, "Moving to state WAITING_FOR_INITIAL_PIC");
+                this.logger.info(ctx, "Moving to state WAITING_FOR_INITIAL_PIC", {newWords});
                 await Game.updateOne({code: game.get("code")}, {
                     $set: {
                         state: StateEnum.WAITING_FOR_INITIAL_PIC,
@@ -151,7 +151,7 @@ export class GameServiceHelpers {
                 return game;
             }
 
-            this.logger.info(ctx, "Moving to state ACTION_NAME from scores");
+            this.logger.info(ctx, "Moving to state ACTION_NAME from ACTION_SCORES");
             await Game.updateOne({code: game.get("code")}, {
                 $set: {
                     state: StateEnum.ACTION_NAME,
