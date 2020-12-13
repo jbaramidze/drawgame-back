@@ -4,19 +4,22 @@ import Stage from "../models/stage.model";
 import {Response, ResponseFail, ResponseOk} from "../utils/Response";
 import {GameServiceHelpers} from "./GameServiceHelpers";
 import {MAX_TIME_IN_ACTION_CHOOSE_SEC, MAX_TIME_IN_ACTION_NAME_SEC, MAX_TIME_IN_ACTION_SCORES_SEC} from "../index";
+import { Logger } from "./Logger";
+import { Context } from "./Context";
 const md5 = require('md5');
 
 export class GameService {
 
+    private readonly logger = new Logger("GameService");
+
     constructor(private readonly helper: GameServiceHelpers) {
     }
 
-    public async getGame(code: string, user: string): Promise<Response<GameResponse>> {
+    public async getGame(ctx: Context, code: string, user: string): Promise<Response<GameResponse>> {
         const gameDocument = await Game.findOne({code});
         if (!gameDocument) {
             return ResponseFail(-1);
         }
-
 
         const game = gameDocument.toObject();
         if (!game.players.find((p) => p.name === user)) {
@@ -25,8 +28,8 @@ export class GameService {
 
         const remainingSec = (game.stageTillTime - Date.now())/1000;
         if (game.stageTillTime && Date.now() > game.stageTillTime) {
-            await this.helper.checkAndAdvanceState(gameDocument, true);
-            return this.getGame(code, user);
+            await this.helper.checkAndAdvanceState(ctx, gameDocument, true);
+            return this.getGame(ctx, code, user);
         }
 
         const baseData: BaseGameResponse = {
@@ -123,7 +126,7 @@ export class GameService {
     }
 
     // state:none -> state:created
-    public async newGame(user: string, score: number, lang: string): Promise<Response<GeneratedGameCode>> {
+    public async newGame(ctx: Context, user: string, score: number, lang: string): Promise<Response<GeneratedGameCode>> {
         const code = randomString(4);
         const word = await this.helper.getNonexistentWord(code, lang);
         const game = new Game({
@@ -138,11 +141,12 @@ export class GameService {
             allUsedWords: []
         });
         await game.save();
+        this.logger.info(ctx, `Created game ${code} by ${user} lang ${lang}`)
         return ResponseOk({code});
     }
 
     // state:created
-    public async joinGame(code: string, user: string): Promise<Response<null>> {
+    public async joinGame(ctx: Context, code: string, user: string): Promise<Response<null>> {
         const game = await Game.findOne({code});
         if (!game) {
             return ResponseFail(-1);
@@ -158,11 +162,12 @@ export class GameService {
 
         const word = await this.helper.getNonexistentWord(code, game.get("lang"));
         await Game.updateOne({code}, {$push: {players: this.helper.getPlayer(user, word)}});
+        this.logger.info(ctx, `Joined ${user} with word ${word}`);
         return ResponseOk(null);
     }
 
     // state:created -> state:waiting_for_initial_pic
-    public async startGame(code: string, user: string): Promise<Response<null>> {
+    public async startGame(ctx: Context, code: string, user: string): Promise<Response<null>> {
         const game = await Game.findOne({code});
         if (!game) {
             return ResponseFail(-1);
@@ -181,11 +186,12 @@ export class GameService {
             stageStartTime: Date.now(),
             "players.$[].waiting_for_action": true
         }});
+        this.logger.info(ctx, `Game started!`);
         return ResponseOk(null);
     }
 
     // state:waiting_for_initial_pic -> state:action_name
-    public async savePic(code: string, user: string, pic: string): Promise<Response<null>> {
+    public async savePic(ctx: Context, code: string, user: string, pic: string): Promise<Response<null>> {
         let game = await Game.findOne({code}, {"state": 1, "players": "1"});
         if (!game) {
             return ResponseFail(-1);
@@ -205,12 +211,13 @@ export class GameService {
         }
 
         game = await Game.findOne({code});
-        await this.helper.checkAndAdvanceState(game);
+        await this.helper.checkAndAdvanceState(ctx, game);
+        this.logger.info(ctx, `${user} saved pic.`);
         return ResponseOk(null);
     }
 
     // state:action_name -> state:action_choose
-    public async pickWord(code: string, player: string, word: string): Promise<Response<null>> {
+    public async pickWord(ctx: Context, code: string, player: string, word: string): Promise<Response<null>> {
         let game = await Game.findOne({code});
         if (!game) {
             return ResponseFail(-1);
@@ -236,12 +243,13 @@ export class GameService {
         }
 
         game = await Game.findOne({code});
-        await this.helper.checkAndAdvanceState(game);
+        await this.helper.checkAndAdvanceState(ctx, game);
+        this.logger.info(ctx, `${player} picked a word ${word}.`);
         return ResponseOk(null);
     }
 
     // state:action_choose -> state:showing_scores -> state:action_name?
-    public async guessWord(code: string, player: string, word: string): Promise<Response<null>> {
+    public async guessWord(ctx: Context, code: string, player: string, word: string): Promise<Response<null>> {
         let game = await Game.findOne({code});
         if (!game) {
             return ResponseFail(-1);
@@ -278,7 +286,8 @@ export class GameService {
         }
 
         game = await Game.findOne({code});
-        await this.helper.checkAndAdvanceState(game);
+        await this.helper.checkAndAdvanceState(ctx, game);
+        this.logger.info(ctx, `${player} guessed a word ${word}.`);
         return ResponseOk(null);
     }
 }

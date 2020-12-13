@@ -1,6 +1,5 @@
 import express from "express"
-import {body, validationResult, param} from "express-validator";
-import {GameService} from "../services/GameService";
+import {body, validationResult} from "express-validator";
 import {AdminService} from "../services/AdminService";
 
 export class AdminRouter {
