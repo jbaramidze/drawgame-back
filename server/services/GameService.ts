@@ -141,7 +141,7 @@ export class GameService {
             allUsedWords: []
         });
         await game.save();
-        this.logger.info(ctx, `Created game ${code} by ${user} lang ${lang}`)
+        this.logger.info(ctx, `Created game ${code} by ${user} word ${word} lang ${lang}`)
         return ResponseOk({code});
     }
 
@@ -210,9 +210,9 @@ export class GameService {
             return ResponseFail(-3);
         }
 
+        this.logger.info(ctx, `${user} saved pic.`);
         game = await Game.findOne({code});
         await this.helper.checkAndAdvanceState(ctx, game);
-        this.logger.info(ctx, `${user} saved pic.`);
         return ResponseOk(null);
     }
 
@@ -242,9 +242,9 @@ export class GameService {
             return ResponseFail(-4);
         }
 
+        this.logger.info(ctx, `${player} picked a word ${word}.`);
         game = await Game.findOne({code});
         await this.helper.checkAndAdvanceState(ctx, game);
-        this.logger.info(ctx, `${player} picked a word ${word}.`);
         return ResponseOk(null);
     }
 
@@ -285,9 +285,9 @@ export class GameService {
             return ResponseFail(-5);
         }
 
+        this.logger.info(ctx, `${player} guessed a word ${word}.`);
         game = await Game.findOne({code});
         await this.helper.checkAndAdvanceState(ctx, game);
-        this.logger.info(ctx, `${player} guessed a word ${word}.`);
         return ResponseOk(null);
     }
 }

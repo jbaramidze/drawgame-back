@@ -151,7 +151,6 @@ export class GameServiceHelpers {
                 return game;
             }
 
-            this.logger.info(ctx, "Moving to state ACTION_NAME from ACTION_SCORES");
             await Game.updateOne({code: game.get("code")}, {
                 $set: {
                     state: StateEnum.ACTION_NAME,
@@ -164,7 +163,9 @@ export class GameServiceHelpers {
                 }
             });
             game = await Game.findOne({code: game.get("code")});
-            const key = `players.${this.getCurrentTurnId(game)}.waiting_for_action`;
+            const turn = this.getCurrentTurnId(game);
+            const key = `players.${turn}.waiting_for_action`;
+            this.logger.info(ctx, "Moving to state ACTION_NAME from ACTION_SCORES", {turn});
             await Game.updateOne({code: game.get("code")}, {$set: {[key]: false}});
         }
 

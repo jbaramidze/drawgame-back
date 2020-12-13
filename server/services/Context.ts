@@ -12,6 +12,11 @@ export class Context {
     }
 
     public getPrefix(): string {
-        return `[${new Date().toISOString()}] ${this.req.method}: ${this.req.baseUrl}${this.req.url}`;
+        // Pad nicely
+        let method: string = this.req.method;
+        while(method.length < 5) {
+            method += " ";
+        }
+        return `[${new Date().toISOString()}] ${method}: ${decodeURI(this.req.baseUrl + this.req.url)}`;
     }
 }
