@@ -6,9 +6,11 @@ import {AdminService} from "./services/AdminService";
 import {AdminRouter} from "./routers/AdminRouter";
 import {GameServiceHelpers} from "./services/GameServiceHelpers";
 import path from "path";
+import { LocalLocker } from './services/Locker';
 
+const locker = new LocalLocker();
 const gameServiceHelpers = new GameServiceHelpers();
-const gameService = new GameService(gameServiceHelpers);
+const gameService = new GameService(gameServiceHelpers, locker);
 const gameRouter = new GameRouter(gameService);
 
 const adminService = new AdminService();
