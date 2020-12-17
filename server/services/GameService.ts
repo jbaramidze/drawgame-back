@@ -7,6 +7,7 @@ import { MAX_TIME_IN_ACTION_CHOOSE_SEC, MAX_TIME_IN_ACTION_NAME_SEC, MAX_TIME_IN
 import { Logger } from "./Logger";
 import { Context } from "./Context";
 import { BaseLocker } from './Locker';
+import { AuthService } from "./AuthService";
 const md5 = require('md5');
 
 export class GameService {
@@ -14,7 +15,8 @@ export class GameService {
     private readonly logger = new Logger("GameService");
 
     constructor(private readonly helper: GameServiceHelpers,
-        private readonly locker: BaseLocker) {
+        private readonly locker: BaseLocker,
+        private readonly auth: AuthService) {
     }
 
     public async getGame(ctx: Context, code: string, user: string): Promise<Response<GameResponse>> {
@@ -146,11 +148,12 @@ export class GameService {
         });
         await game.save();
         this.logger.info(ctx, `Created game ${code} by ${user} word ${word} lang ${lang}`)
-        return ResponseOk({ code });
+        const token = this.auth.createToken(code, user);
+        return ResponseOk({ code, token });
     }
 
     // state:created
-    public async joinGame(ctx: Context, code: string, user: string): Promise<Response<null>> {
+    public async joinGame(ctx: Context, code: string, user: string): Promise<Response<CreatedToken>> {
         return this.locker.withLock(ctx, code, async () => {
             const game = await Game.findOne({ code });
             if (!game) {
@@ -168,7 +171,8 @@ export class GameService {
             const word = await this.helper.getNonexistentWord(code, game.get("lang"));
             await Game.updateOne({ code }, { $push: { players: this.helper.getPlayer(user, word) } });
             this.logger.info(ctx, `Joined ${user} with word ${word}`);
-            return ResponseOk(null);
+            const token = this.auth.createToken(code, user);
+            return ResponseOk({token});
         });
     }
 
@@ -310,8 +314,13 @@ export class GameService {
     }
 }
 
+export interface CreatedToken {
+    token: string;
+}
+
 export interface GeneratedGameCode {
     code: string;
+    token: string;
 }
 
 export interface BaseGameResponse {

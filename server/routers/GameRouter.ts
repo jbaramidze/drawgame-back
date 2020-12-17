@@ -4,7 +4,8 @@ import {GameService} from "../services/GameService";
 import {DGError} from "../common/DGError";
 import { Context } from "../services/Context";
 import { Logger } from "../services/Logger";
-import {Response} from "../utils/Response"
+import {Response, ResponseIsOk} from "../utils/Response"
+import { AuthService } from '../services/AuthService';
 
 export class GameRouter {
     private readonly router = express.Router();
@@ -28,7 +29,8 @@ export class GameRouter {
         }
     }
 
-    constructor(private readonly gameService: GameService) {
+    constructor(private readonly gameService: GameService,
+                private readonly auth: AuthService) {
         this.router.post("/",
             [body('user').isString().notEmpty(),
                      body('lang').isString().notEmpty(),
@@ -53,9 +55,10 @@ export class GameRouter {
             // @ts-ignore
             async (req, res) => {
                 const ctx = new Context(req, res);
-                if (!this.validate(ctx)) {
+                if (!this.validate(ctx) || !this.authenticate(ctx)) {
                     return;
                 }
+
                 await this.withErrorProcessing(ctx, this.gameService.getGame(ctx,
                     req.params.code,
                     req.query.user
@@ -82,7 +85,7 @@ export class GameRouter {
             // @ts-ignore
             async (req, res) => {
                 const ctx = new Context(req, res);
-                if (!this.validate(ctx)) {
+                if (!this.validate(ctx) || !this.authenticate(ctx)) {
                     return;
                 }
 
@@ -99,7 +102,7 @@ export class GameRouter {
             // @ts-ignore
             async (req, res) => {
                 const ctx = new Context(req, res);
-                if (!this.validate(ctx)) {
+                if (!this.validate(ctx) || !this.authenticate(ctx)) {
                     return;
                 }
 
@@ -116,7 +119,7 @@ export class GameRouter {
             // @ts-ignore
             async (req, res) => {
                 const ctx = new Context(req, res);
-                if (!this.validate(ctx)) {
+                if (!this.validate(ctx) || !this.authenticate(ctx)) {
                     return;
                 }
 
@@ -133,7 +136,7 @@ export class GameRouter {
             // @ts-ignore
             async (req, res) => {
                 const ctx = new Context(req, res);
-                if (!this.validate(ctx)) {
+                if (!this.validate(ctx) || !this.authenticate(ctx)) {
                     return;
                 }
 
@@ -143,6 +146,19 @@ export class GameRouter {
                     req.body.word
                 ));
             });
+    }
+
+    private authenticate(ctx: Context) {
+        const user = ctx.getReq().body.user ?? ctx.getReq().query.user
+        const authResponse = this.auth.authenticate(ctx.getReq().params.code, user, ctx.getReq().headers);
+
+        if (!ResponseIsOk(authResponse)) {
+            this.logger.warning(ctx, `Auth failed for code ${ctx.getReq().params.code} user ${user}`, {authResponse})
+            ctx.getRes().json(authResponse)
+            return false;
+        }
+
+        return true;
     }
 
     private validate(ctx: Context) {
