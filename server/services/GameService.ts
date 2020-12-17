@@ -151,152 +151,162 @@ export class GameService {
 
     // state:created
     public async joinGame(ctx: Context, code: string, user: string): Promise<Response<null>> {
-        const game = await Game.findOne({ code });
-        if (!game) {
-            return ResponseFail(-1);
-        }
+        return this.locker.withLock(ctx, code, async () => {
+            const game = await Game.findOne({ code });
+            if (!game) {
+                return ResponseFail(-1);
+            }
 
-        if (game.get("state") !== "created") {
-            return ResponseFail(-2);
-        }
+            if (game.get("state") !== "created") {
+                return ResponseFail(-2);
+            }
 
-        if (this.helper.getAllPlayerNames(game).find((name) => name === user)) {
-            return ResponseFail(-3);
-        }
+            if (this.helper.getAllPlayerNames(game).find((name) => name === user)) {
+                return ResponseFail(-3);
+            }
 
-        const word = await this.helper.getNonexistentWord(code, game.get("lang"));
-        await Game.updateOne({ code }, { $push: { players: this.helper.getPlayer(user, word) } });
-        this.logger.info(ctx, `Joined ${user} with word ${word}`);
-        return ResponseOk(null);
+            const word = await this.helper.getNonexistentWord(code, game.get("lang"));
+            await Game.updateOne({ code }, { $push: { players: this.helper.getPlayer(user, word) } });
+            this.logger.info(ctx, `Joined ${user} with word ${word}`);
+            return ResponseOk(null);
+        });
     }
 
     // state:created -> state:waiting_for_initial_pic
     public async startGame(ctx: Context, code: string, user: string): Promise<Response<null>> {
-        const game = await Game.findOne({ code });
-        if (!game) {
-            return ResponseFail(-1);
-        }
-
-        if (game.get("state") !== "created") {
-            return ResponseFail(-2);
-        }
-
-        if (user !== game.get("owner")) {
-            return ResponseFail(-3);
-        }
-
-        await Game.updateOne({ code }, {
-            $set: {
-                state: StateEnum.WAITING_FOR_INITIAL_PIC,
-                stageStartTime: Date.now(),
-                "players.$[].waiting_for_action": true
+        return this.locker.withLock(ctx, code, async () => {
+            const game = await Game.findOne({ code });
+            if (!game) {
+                return ResponseFail(-1);
             }
+
+            if (game.get("state") !== "created") {
+                return ResponseFail(-2);
+            }
+
+            if (user !== game.get("owner")) {
+                return ResponseFail(-3);
+            }
+
+            await Game.updateOne({ code }, {
+                $set: {
+                    state: StateEnum.WAITING_FOR_INITIAL_PIC,
+                    stageStartTime: Date.now(),
+                    "players.$[].waiting_for_action": true
+                }
+            });
+            this.logger.info(ctx, `Game started!`);
+            return ResponseOk(null);
         });
-        this.logger.info(ctx, `Game started!`);
-        return ResponseOk(null);
     }
 
     // state:waiting_for_initial_pic -> state:action_name
     public async savePic(ctx: Context, code: string, user: string, pic: string): Promise<Response<null>> {
-        let game = await Game.findOne({ code }, { "state": 1, "players": "1" });
-        if (!game) {
-            return ResponseFail(-1);
-        }
-
-        if (game.get("state") !== "waiting_for_initial_pic") {
-            return ResponseFail(-2);
-        }
-
-        const updated = await Game.updateOne({ code, players: { $elemMatch: { name: user } } }, {
-            $set: {
-                "players.$.pic": pic,
-                "players.$.waiting_for_action": false
+        return this.locker.withLock(ctx, code, async () => {
+            let game = await Game.findOne({ code }, { "state": 1, "players": "1" });
+            if (!game) {
+                return ResponseFail(-1);
             }
+
+            if (game.get("state") !== "waiting_for_initial_pic") {
+                return ResponseFail(-2);
+            }
+
+            const updated = await Game.updateOne({ code, players: { $elemMatch: { name: user } } }, {
+                $set: {
+                    "players.$.pic": pic,
+                    "players.$.waiting_for_action": false
+                }
+            });
+
+            if (updated.nModified === 0) {
+                return ResponseFail(-3);
+            }
+
+            this.logger.info(ctx, `${user} saved pic.`);
+            game = await Game.findOne({ code });
+            await this.helper.checkAndAdvanceState(ctx, game);
+            return ResponseOk(null);
         });
-
-        if (updated.nModified === 0) {
-            return ResponseFail(-3);
-        }
-
-        this.logger.info(ctx, `${user} saved pic.`);
-        game = await Game.findOne({ code });
-        await this.helper.checkAndAdvanceState(ctx, game);
-        return ResponseOk(null);
     }
 
     // state:action_name -> state:action_choose
     public async pickWord(ctx: Context, code: string, player: string, word: string): Promise<Response<null>> {
-        let game = await Game.findOne({ code });
-        if (!game) {
-            return ResponseFail(-1);
-        }
-
-        if (game.get("state") !== "action_name") {
-            return ResponseFail(-2);
-        }
-
-        if (this.helper.getCurrentTurnName(game) === player) {
-            return ResponseFail(-3);
-        }
-
-        const updated = await Game.updateOne({ code, players: { $elemMatch: { name: player } } }, {
-            $set: {
-                "players.$.stage.chosen_word": word,
-                "players.$.waiting_for_action": false
+        return this.locker.withLock(ctx, code, async () => {
+            let game = await Game.findOne({ code });
+            if (!game) {
+                return ResponseFail(-1);
             }
+
+            if (game.get("state") !== "action_name") {
+                return ResponseFail(-2);
+            }
+
+            if (this.helper.getCurrentTurnName(game) === player) {
+                return ResponseFail(-3);
+            }
+
+            const updated = await Game.updateOne({ code, players: { $elemMatch: { name: player } } }, {
+                $set: {
+                    "players.$.stage.chosen_word": word,
+                    "players.$.waiting_for_action": false
+                }
+            });
+
+            if (updated.nModified === 0) {
+                return ResponseFail(-4);
+            }
+
+            this.logger.info(ctx, `${player} picked a word ${word}.`);
+            game = await Game.findOne({ code });
+            await this.helper.checkAndAdvanceState(ctx, game);
+            return ResponseOk(null);
         });
-
-        if (updated.nModified === 0) {
-            return ResponseFail(-4);
-        }
-
-        this.logger.info(ctx, `${player} picked a word ${word}.`);
-        game = await Game.findOne({ code });
-        await this.helper.checkAndAdvanceState(ctx, game);
-        return ResponseOk(null);
     }
 
     // state:action_choose -> state:showing_scores -> state:action_name?
     public async guessWord(ctx: Context, code: string, player: string, word: string): Promise<Response<null>> {
-        let game = await Game.findOne({ code });
-        if (!game) {
-            return ResponseFail(-1);
-        }
-
-        if (game.get("state") !== "action_choose") {
-            return ResponseFail(-2);
-        }
-
-        if (this.helper.getCurrentTurnName(game) === player) {
-            return ResponseFail(-3);
-        }
-
-        const words = (await this.helper.getAllWordsToGuess(game)).filter((w) => w.word === word);
-
-        if (words.length === 0) {
-            return ResponseFail(-4);
-        }
-
-        // Let the user choose his word, if it's more then 1 times.
-        if (words.length === 1 && words[0].owner === player) {
-            return ResponseFail(-6);
-        }
-
-        const updated = await Game.updateOne({ code, players: { $elemMatch: { name: player } } }, {
-            $set: {
-                "players.$.stage.guessed_word": word,
-                "players.$.waiting_for_action": false
+        return this.locker.withLock(ctx, code, async () => {
+            let game = await Game.findOne({ code });
+            if (!game) {
+                return ResponseFail(-1);
             }
+
+            if (game.get("state") !== "action_choose") {
+                return ResponseFail(-2);
+            }
+
+            if (this.helper.getCurrentTurnName(game) === player) {
+                return ResponseFail(-3);
+            }
+
+            const words = (await this.helper.getAllWordsToGuess(game)).filter((w) => w.word === word);
+
+            if (words.length === 0) {
+                return ResponseFail(-4);
+            }
+
+            // Let the user choose his word, if it's more then 1 times.
+            if (words.length === 1 && words[0].owner === player) {
+                return ResponseFail(-6);
+            }
+
+            const updated = await Game.updateOne({ code, players: { $elemMatch: { name: player } } }, {
+                $set: {
+                    "players.$.stage.guessed_word": word,
+                    "players.$.waiting_for_action": false
+                }
+            });
+
+            if (updated.nModified === 0) {
+                return ResponseFail(-5);
+            }
+
+            this.logger.info(ctx, `${player} guessed a word ${word}.`);
+            game = await Game.findOne({ code });
+            await this.helper.checkAndAdvanceState(ctx, game);
+            return ResponseOk(null);
         });
-
-        if (updated.nModified === 0) {
-            return ResponseFail(-5);
-        }
-
-        this.logger.info(ctx, `${player} guessed a word ${word}.`);
-        game = await Game.findOne({ code });
-        await this.helper.checkAndAdvanceState(ctx, game);
-        return ResponseOk(null);
     }
 }
 
