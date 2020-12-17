@@ -1,6 +1,12 @@
+import { randomString } from '../utils/other';
 export class Context {
+    private readonly hash = randomString(10);
     constructor(private readonly req: any,
                private readonly res: any) {
+    }
+
+    public getHash(): string {
+        return this.hash;
     }
 
     public getRes() {
