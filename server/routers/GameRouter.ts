@@ -152,7 +152,7 @@ export class GameRouter {
         const authResponse = this.auth.authenticate(ctx.getReq().params.code, user, ctx.getReq().headers);
 
         if (!ResponseIsOk(authResponse)) {
-            this.logger.warning(ctx, `Auth failed for code ${ctx.getReq().params.code} user ${user}`, {authResponse})
+            this.logger.warning(ctx, `Auth failed for user ${user}`, {authResponse})
             ctx.getRes().json(authResponse)
             return false;
         }
