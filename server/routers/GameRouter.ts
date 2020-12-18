@@ -95,8 +95,7 @@ export class GameRouter {
                 ));
             });
 
-        // FIXME: wtf is 1 doing there
-        this.router.post("/:code/1/savepic",
+        this.router.post("/:code/savepic",
             [body('user').isString().notEmpty(),
                       body('pic').isString().notEmpty()],
             // @ts-ignore

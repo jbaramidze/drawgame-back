@@ -1,18 +1,20 @@
 import React, {useContext, useState} from 'react';
-import {BEURL, LangContext, Props, StateEnum} from "../App";
+import {BEURL, MainContext, Props, StateEnum} from "../App";
 import CanvasDraw from "react-canvas-draw";
 import axios from "axios";
 import {Progress} from "../utils/Progress";
 import {i8n} from "../utils/I8n";
+import { getAuthHeader } from '../utils/utils';
 
 export function ChooseComponent(props: Props) {
-    const l = useContext(LangContext);
+    const ctx = useContext(MainContext);
     const [error, setError] = useState(0);
     const [clicked, setClicked] = useState("");
 
     const click = async (e) => {
         setClicked(e.target.name);
-        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/guessWord", {user: props.name, word: e.target.name});
+        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/guessWord",
+               {user: props.name, word: e.target.name}, getAuthHeader());
         if (response.data.code < 0) {
             setClicked("");
             setError(response.data.code);
@@ -52,18 +54,18 @@ export function ChooseComponent(props: Props) {
                 style={{display: "inline-block", marginBottom: "10px"}}
                 lazyRadius={0}/>
         {game.myTurn &&
-        <p style={{fontSize: "25px"}} className="text-center">{i8n(l, "waitingTillPeopleChoose")}</p>
+        <p style={{fontSize: "25px"}} className="text-center">{i8n(ctx.lang, "waitingTillPeopleChoose")}</p>
         }
         {!game.myTurn &&
-        <p style={{fontSize: "25px"}} className="text-center">{i8n(l, "choosePicName")}</p>
+        <p style={{fontSize: "25px"}} className="text-center">{i8n(ctx.lang, "choosePicName")}</p>
         }
         <div>
         {buttonArray}
         </div>
         <Progress remaining={game.remainingSec} total={game.stateSeconds}/>
         {error !== 0 && <div className="alert alert-danger" role="alert">
-            {i8n(l, "operationFailed")}: {error}</div>
+            {i8n(ctx.lang, "operationFailed")}: {error}</div>
         }
-        <p style={{paddingTop: "10px"}} className="text-monospace">{i8n(l, "waitingFor")}: {props.game.waitingFor.join(", ")}</p>
+        <p style={{paddingTop: "10px"}} className="text-monospace">{i8n(ctx.lang, "waitingFor")}: {props.game.waitingFor.join(", ")}</p>
     </div>)
 }

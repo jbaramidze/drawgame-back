@@ -219,7 +219,7 @@ describe('Post Endpoints', () => {
     const PlayerTokenMap = new Map();
 
     async function savePic(p: Player, data: any) {
-        return (await supertest(app).post("/api/game/" + code + "/1/savepic").set("Authorization", `Bearer ${PlayerTokenMap.get(p)}`)
+        return (await supertest(app).post("/api/game/" + code + "/savepic").set("Authorization", `Bearer ${PlayerTokenMap.get(p)}`)
                       .send({user: p, ...data})).body.code
     }
     async function pickWord(p: Player, data: any) {
