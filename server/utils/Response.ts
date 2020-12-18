@@ -9,6 +9,7 @@ export interface SuccessResponse<T> extends Response<T> {
 }
 
 export interface FailureResponse extends Response<any> {
+    hint?: string;
 }
 
 export function ResponseOk<T>(data: T): SuccessResponse<T> {
@@ -18,9 +19,10 @@ export function ResponseOk<T>(data: T): SuccessResponse<T> {
     };
 }
 
-export function ResponseFail(code: number): FailureResponse {
+export function ResponseFail(code: number, hint?: string): FailureResponse {
     return {
-        code: code
+        code: code,
+        hint
     };
 }
 

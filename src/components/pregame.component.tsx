@@ -1,10 +1,11 @@
 import React, {useContext, useState} from 'react';
 import axios from "axios";
-import {BEURL, LangContext, Props, StateEnum} from "../App";
+import {BEURL, MainContext, Props, StateEnum} from "../App";
 import {i8n} from "../utils/I8n";
+import {getAuthHeader} from "../utils/utils";
 
 export function PregameComponent(props: Props) {
-    const l = useContext(LangContext);
+    const ctx = useContext(MainContext);
     const [error, setError] = useState(0);
     const [sent, setSent] = useState(false);
 
@@ -14,7 +15,7 @@ export function PregameComponent(props: Props) {
 
     const startGame = async () => {
         setSent(true);
-        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/start", {user: props.name});
+        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/start", {user: props.name}, getAuthHeader());
         if (response.data.code < 0) {
             setSent(false);
             setError(response.data.code);
@@ -31,12 +32,12 @@ export function PregameComponent(props: Props) {
     return (
         <div className={"middiv"}>
             <p style={{fontSize: "25px"}} className="text-center">
-                {i8n(l, "code")}:&nbsp;
+                {i8n(ctx.lang, "code")}:&nbsp;
                 <span className={"pregame_code"}>
                     {props.game?.code}
                 </span>
             </p>
-            <p style={{fontSize: "25px"}} className="text-center">{i8n(l, "players")}:</p>
+            <p style={{fontSize: "25px"}} className="text-center">{i8n(ctx.lang, "players")}:</p>
             <ul className="list-group">
                 {playersList}
             </ul>
@@ -47,11 +48,11 @@ export function PregameComponent(props: Props) {
                     className="btn btn-primary btn-lg btn-block"
                     disabled={props.game.players.length < 2 || sent}
                 >
-                    {i8n(l, "start")}!
+                    {i8n(ctx.lang, "start")}!
                 </button>
             }
             {error !== 0 && <div className="alert alert-danger" role="alert">
-                {i8n(l, "operationFailed")}: {error}
+                {i8n(ctx.lang, "operationFailed")}: {error}
             </div>}
         </div>
     );

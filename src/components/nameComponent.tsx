@@ -1,19 +1,21 @@
 import React, {useContext, useState} from 'react';
-import {BEURL, LangContext, Props, StateEnum} from "../App";
+import { BEURL, Props, StateEnum, MainContext } from '../App';
 import CanvasDraw from "react-canvas-draw";
 import axios from "axios";
 import {Progress} from "../utils/Progress";
 import {i8n} from "../utils/I8n";
+import {getAuthHeader} from "../utils/utils";
 
 export function NameComponent(props: Props) {
-    const l = useContext(LangContext);
+    const ctx = useContext(MainContext);
     const [word, setWord] = useState("");
     const [error, setError] = useState(0);
     const [sent, setSent] = useState(false);
 
     const nameThePic = async () => {
         setSent(true);
-        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/pickWord", {user: props.name, word: word});
+        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/pickWord",
+                 {user: props.name, word: word}, getAuthHeader());
         if (response.data.code < 0) {
             setSent(false);
             setError(response.data.code);
@@ -38,7 +40,7 @@ export function NameComponent(props: Props) {
                         style={{display: "inline-block", marginBottom: "10px"}}
                         lazyRadius={0}/>
         {game.myTurn &&
-        <p style={{fontSize: "25px"}} className="text-center">{i8n(l, "waitingForOthersToName")}</p>
+        <p style={{fontSize: "25px"}} className="text-center">{i8n(ctx.lang, "waitingForOthersToName")}</p>
         }
         {!game.myTurn &&
         <div>
@@ -49,7 +51,7 @@ export function NameComponent(props: Props) {
                     value={word}
                     className="form-control"
                     onChange={(e) => setWord(e.target.value)}
-                    placeholder={i8n(l, "name") + "...."}/>
+                    placeholder={i8n(ctx.lang, "name") + "...."}/>
             </div>
             <div className="form-group">
                 <button
@@ -59,14 +61,14 @@ export function NameComponent(props: Props) {
                     className="btn btn-primary btn-lg btn-block"
                     onClick={nameThePic}
                 >
-                    {i8n(l, "accept")}
+                    {i8n(ctx.lang, "accept")}
                 </button>
             </div>
         </div>
         }
         <Progress remaining={game.remainingSec} total={game.stateSeconds}/>
         {error !== 0 && <div className="alert alert-danger" role="alert">
-            {i8n(l, "operationFailed")}: {error}</div>
+            {i8n(ctx.lang, "operationFailed")}: {error}</div>
         }
         <p style={{paddingTop: "10px"}} className="text-monospace">ველოდები: {props.game.waitingFor.join(", ")}</p>
     </div>)
