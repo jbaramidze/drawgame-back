@@ -1,17 +1,17 @@
 import React, {useContext, useState} from 'react';
 import axios from "axios"
-import {BEURL, LangContext} from "../App";
+import {BEURL, MainContext} from "../App";
 import Select from 'react-select';
 import {i8n} from "../utils/I8n";
 
 interface iOption { label: string; value: string; };
 
 export function WelcomeComponent(props) {
-    const l = useContext(LangContext);
+    const ctx = useContext(MainContext);
     const options: iOption[] = [
-        { value: '20', label: i8n(l, "before20p") },
-        { value: '40', label: i8n(l, "before40p") },
-        { value: '60', label: i8n(l, "before60p") }
+        { value: '20', label: i8n(ctx.lang, "before20p") },
+        { value: '40', label: i8n(ctx.lang, "before40p") },
+        { value: '60', label: i8n(ctx.lang, "before60p") }
     ];
 
     const [codeValue, setCodeValue] = useState("");
@@ -31,16 +31,18 @@ export function WelcomeComponent(props) {
             setError(0);
             props.setCode(codeValue);
             sessionStorage.setItem("code", codeValue);
+            sessionStorage.setItem("hash", response.data.data.token);
             sessionStorage.setItem("name", props.name);
         }
     };
 
     const create = async () => {
         setSent(true);
-        const response = await axios.post(BEURL + "/api/game/", {user: props.name, score: score.value, lang: l});
+        const response = await axios.post(BEURL + "/api/game/", {user: props.name, score: score.value, lang: ctx.lang});
         const code = response.data.data.code;
         props.setCode(code);
         sessionStorage.setItem("code", code);
+        sessionStorage.setItem("hash", response.data.data.token);
         sessionStorage.setItem("name", props.name);
     };
 
@@ -63,7 +65,7 @@ export function WelcomeComponent(props) {
                 <input
                     type="text"
                     className="form-control"
-                    placeholder={i8n(l, "name") + "...."}
+                    placeholder={i8n(ctx.lang, "name") + "...."}
                     disabled={connectToggled !== "none"}
                     onChange={(e) => props.setName(e.target.value)}
                     value={props.name}/>
@@ -74,14 +76,14 @@ export function WelcomeComponent(props) {
                     className={"welcome_btn_l btn btn-primary"}
                     disabled={props.name.length === 0}
                     onClick={() => setConnectToggled("create")}>
-                    {i8n(l, "createGame")}
+                    {i8n(ctx.lang, "createGame")}
                 </button>
                 <button
                     type="button"
                     disabled={props.name.length === 0}
                     onClick={() => setConnectToggled("connect")}
                     className="welcome_btn_r btn btn-success">
-                    {i8n(l, "joinGame")}
+                    {i8n(ctx.lang, "joinGame")}
                 </button>
             </div>
             {connectToggled === "connect" &&
@@ -91,7 +93,7 @@ export function WelcomeComponent(props) {
                     value={codeValue}
                     onChange={(e) => setCodeValue(e.target.value)}
                     className="form-control"
-                    placeholder={i8n(l, "code")}/>
+                    placeholder={i8n(ctx.lang, "code")}/>
             </div>,
                 <div className="form-group" key={"div2"}>
                 <button
@@ -99,7 +101,7 @@ export function WelcomeComponent(props) {
                     disabled={sent}
                     style={{"width": "100%"}}
                     className="btn btn-success">
-                    {i8n(l, "connect")}
+                    {i8n(ctx.lang, "connect")}
                 </button>
                 </div>
             ]}
@@ -117,12 +119,12 @@ export function WelcomeComponent(props) {
                         disabled={sent}
                         style={{"width": "100%"}}
                         className="btn btn-success">
-                        {i8n(l, "create")}
+                        {i8n(ctx.lang, "create")}
                     </button>
                 </div>
             ]}
             {error !== 0 && <div className="alert alert-danger" role="alert">
-                {i8n(l, "operationFailed")}: {error}
+                {i8n(ctx.lang, "operationFailed")}: {error}
             </div>}
         </div>
     );

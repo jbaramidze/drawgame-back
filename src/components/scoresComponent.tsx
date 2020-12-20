@@ -1,11 +1,11 @@
 import React, {useContext} from 'react';
-import {LangContext, Props, StateEnum} from "../App";
+import {MainContext, Props, StateEnum} from "../App";
 import CanvasDraw from "react-canvas-draw";
 import {Progress} from "../utils/Progress";
 import {i8n} from "../utils/I8n";
 
 export function ScoresComponent(props: Props) {
-    const l = useContext(LangContext);
+    const ctx = useContext(MainContext);
     if (!props.game || props.game.state !== StateEnum.ACTION_SCORES) {
         return (<div/>);
     }
@@ -22,28 +22,28 @@ export function ScoresComponent(props: Props) {
                 style={{display: "inline-block", marginBottom: "10px"}}
                 lazyRadius={0}/>
         <p style={{fontSize: "25px"}} className="text-center">
-            {i8n(l, "picBelongsToAndGotPoints")} <b>{game.turnWord}</b>
+            {i8n(ctx.lang, "picBelongsToAndGotPoints")} <b>{game.turnWord}</b>
         </p>
         <div style={{overflow: "auto"}}>
             <table className="table">
                 <thead>
                 <tr>
-                    <th scope="col">{i8n(l, "name")}</th>
-                    <th scope="col">{i8n(l, "action")}</th>
-                    <th scope="col">{i8n(l, "mislead")}</th>
-                    <th scope="col">{i8n(l, "score")}</th>
+                    <th scope="col">{i8n(ctx.lang, "name")}</th>
+                    <th scope="col">{i8n(ctx.lang, "action")}</th>
+                    <th scope="col">{i8n(ctx.lang, "mislead")}</th>
+                    <th scope="col">{i8n(ctx.lang, "score")}</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr key={game.turn}>
                     <td>{game.turn}</td>
-                    <td>{i8n(l, "author")}</td>
+                    <td>{i8n(ctx.lang, "author")}</td>
                     <td></td>
                     <td>{game.players.find((p) => p.name === game.turn).score} (+{game.turnScore})</td>
                 </tr>
                 {game.guesses.map((g) => <tr key={g.name}>
                     <td>{g.name}</td>
-                    <td>{g.guessed_word === game.turnWord ? i8n(l,"guessed") : i8n(l, "couldnotguess")}</td>
+                    <td>{g.guessed_word === game.turnWord ? i8n(ctx.lang,"guessed") : i8n(ctx.lang, "couldnotguess")}</td>
                     <td>{game.guesses.reduce((p, c) => c.guessed_word === g.chosen_word ? p + 1 : p, 0)}</td>
                     <td>{game.players.find((p) => p.name === g.name).score} (+{g.score})</td>
                 </tr>)}

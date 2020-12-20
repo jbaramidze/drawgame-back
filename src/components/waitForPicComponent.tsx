@@ -1,11 +1,12 @@
 import React, {useContext, useRef, useState} from 'react';
-import {BEURL, LangContext, Props, StateEnum} from "../App";
+import {BEURL, MainContext, Props, StateEnum} from "../App";
 import CanvasDraw from 'react-canvas-draw';
 import axios from "axios";
 import {i8n} from "../utils/I8n";
+import {getAuthHeader} from "../utils/utils";
 
 export function WaitForPicComponent(props: Props) {
-    const l = useContext(LangContext);
+    const ctx = useContext(MainContext);
     const [error, setError] = useState(0);
     const [sent, setSent] = useState(false);
     const canvasRef = useRef<CanvasDraw>();
@@ -22,10 +23,10 @@ export function WaitForPicComponent(props: Props) {
         } catch (e) {
         }
         setSent(true);
-        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/1/savepic", {
+        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/savepic", {
             user: props.name,
             pic: canvasRef.current?.getSaveData()
-        });
+        }, getAuthHeader());
         if (response.data.code < 0) {
             setSent(false);
             setError(response.data.code);
@@ -41,7 +42,7 @@ export function WaitForPicComponent(props: Props) {
     const waitingForMe = (props.game && props.game.waitingFor.includes(props.name));
 
     return (<div className={"middiv"} style={{textAlign: "center", marginTop: "5vh", padding: "1em"}}>
-        <p style={{fontSize: "25px"}} className="text-center">{i8n(l, "pleaseDraw")} {
+        <p style={{fontSize: "25px"}} className="text-center">{i8n(ctx.lang, "pleaseDraw")} {
             props.game.word
         }</p>
         <div>
@@ -60,20 +61,20 @@ export function WaitForPicComponent(props: Props) {
             className="btn btn-secondary btn-sm welcome_btn_l"
             disabled={sent || !waitingForMe}
             onClick={erase}>
-            {i8n(l, "clear")}
+            {i8n(ctx.lang, "clear")}
         </button>
         <button
             type="button"
             className="btn btn-primary btn-sm welcome_btn_r"
             disabled={sent || !waitingForMe}
             onClick={clicked}>
-            {sent || !waitingForMe ? i8n(l, "accepted") : i8n(l, "send")}
+            {sent || !waitingForMe ? i8n(ctx.lang, "accepted") : i8n(ctx.lang, "send")}
         </button>
         </div>
         {error !== 0 && <div style={{marginTop: "10px"}} className="alert alert-danger" role="alert">
-            {i8n(l, "operationFailed")}: {error}
+            {i8n(ctx.lang, "operationFailed")}: {error}
         </div> }
-        <p style={{paddingTop: "10px"}} className="text-monospace">{i8n(l, "waitingFor")}: {props.game.waitingFor.join(", ")}</p>
+        <p style={{paddingTop: "10px"}} className="text-monospace">{i8n(ctx.lang, "waitingFor")}: {props.game.waitingFor.join(", ")}</p>
 
     </div>)
 }

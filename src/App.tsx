@@ -10,10 +10,11 @@ import {ChooseComponent} from "./components/chooseComponent";
 import {NameComponent} from "./components/nameComponent";
 import {ScoresComponent} from "./components/scoresComponent";
 import {FinishedComponent} from "./components/finishedComponent";
+import {getAuthHeader} from "./utils/utils";
 
 export const BEURL = process.env.REACT_APP_BEURL || "";
 
-export const LangContext = React.createContext('en');
+export const MainContext = React.createContext({lang: "en"});
 
 export function App() {
     const [code, setCode] = useState(sessionStorage.getItem("code"));
@@ -31,7 +32,7 @@ export function App() {
         const poll = async () => {
             let response;
             try {
-                response = await axios.get(BEURL + "/api/game/" + code+"?user=" + name);
+                response = await axios.get(BEURL + "/api/game/" + code+"?user=" + name, getAuthHeader());
             } catch (e) {
                 // Retry
                 setTimeout(poll, 1500);
@@ -56,6 +57,7 @@ export function App() {
             if (response.data.data.state === StateEnum.FINISHED) {
                 sessionStorage.removeItem("code");
                 sessionStorage.removeItem("name");
+                sessionStorage.removeItem("hash");
                 return;
             }
 
@@ -111,7 +113,7 @@ export function App() {
 
     return (
         <BrowserRouter>
-            <LangContext.Provider value={localStorage.getItem("lang") || "en"}>
+            <MainContext.Provider value={{lang: localStorage.getItem("lang") || "en"}}>
             {link && <Redirect to={link}/>}
             <Route exact path={"/"}><WelcomeComponent setCode={setCode} name={name} setName={setName}/></Route>
             <Route path={"/pregame"}><PregameComponent game={game} name={name}/></Route>
@@ -120,7 +122,7 @@ export function App() {
             <Route path={"/game/actionChoose"}><ChooseComponent game={game} name={name}/></Route>
             <Route path={"/game/actionScores"}><ScoresComponent game={game} name={name}/></Route>
             <Route path={"/game/finished"}><FinishedComponent game={game} name={name}/></Route>
-            </LangContext.Provider>
+            </MainContext.Provider>
         </BrowserRouter>
     );
 }
