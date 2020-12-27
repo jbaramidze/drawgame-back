@@ -1,12 +1,14 @@
 import React, {useContext, useState} from 'react';
-import { BEURL, Props, StateEnum, MainContext } from '../App';
+import {BEURL} from '../App';
 import CanvasDraw from "react-canvas-draw";
 import axios from "axios";
-import {Progress} from "../utils/Progress";
+import {Progress} from "./helpers/Progress";
 import {i8n} from "../utils/I8n";
-import {getAuthHeader} from "../utils/utils";
+import {getAuthHeader} from "../utils/Auth";
+import {MainContext} from "../utils/Context";
+import {ActionNameGameResponse} from "../utils/Server";
 
-export function NameComponent(props: Props) {
+export function NameComponent(props: {game: ActionNameGameResponse, name: string}) {
     const ctx = useContext(MainContext);
     const [word, setWord] = useState("");
     const [error, setError] = useState(0);
@@ -24,12 +26,8 @@ export function NameComponent(props: Props) {
         }
     }
 
-    if (!props.game || props.game.state !== StateEnum.ACTION_NAME) {
-        return (<div/>);
-    }
-
     const game = props.game;
-    const waitingForMe = (props.game && props.game.waitingFor.includes(props.name));
+    const waitingForMe = (props.game && props.game.waitingFor?.includes(props.name));
 
     return (<div style={{textAlign: "center", marginTop: "2vh", padding: "1em"}} className={"middiv"}>
             <CanvasDraw disabled={true}
@@ -70,6 +68,6 @@ export function NameComponent(props: Props) {
         {error !== 0 && <div className="alert alert-danger" role="alert">
             {i8n(ctx.lang, "operationFailed")}: {error}</div>
         }
-        <p style={{paddingTop: "10px"}} className="text-monospace">ველოდები: {props.game.waitingFor.join(", ")}</p>
+        <p style={{paddingTop: "10px"}} className="text-monospace">ველოდები: {props.game.waitingFor?.join(", ")}</p>
     </div>)
 }

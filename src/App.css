@@ -71,3 +71,22 @@
   border-radius: 2em;
   background: beige;
 }
+
+.lang_en {
+  width: 64px;
+  height: 35px;
+  float: right;
+  background: url("./img/flag-en.jpg");
+  background-size: 64px 35px;
+  border: 0px;
+}
+
+.lang_ge {
+  width: 64px;
+  height: 35px;
+  float: right;
+  background: url("./img/flag-ge.jpg");
+  margin-right: 10px;
+  background-size: 64px 35px;
+  border: 0px;
+}

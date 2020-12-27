@@ -1,4 +1,6 @@
-const map = new Map<string, {ge: string, en: string}>([
+export type Languages = "ge" | "en";
+
+const map = new Map<string, {[key in Languages]: string}>([
     ["name",            {ge: "სახელი",              en: "name"}],
     ["createGame",      {ge: "თამაშის შექმნა",      en: "Create game"}],
     ["joinGame",        {ge: "მიერთება",            en: "Join game"}],
@@ -42,8 +44,8 @@ const map = new Map<string, {ge: string, en: string}>([
 
 ]);
 
-export function i8n(l: string, key: string, args: Array<string | number> = []) {
-    let data: string = map.get(key)[l];
+export function i8n(l: Languages, key: string, args: Array<string | number> = []) {
+    let data: string = map.get(key)?.[l]!;
     for(let i = 0; i < args.length; i++) {
         data = data.replace(`@${i}@`, String(args[i]));
     }

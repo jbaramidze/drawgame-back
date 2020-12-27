@@ -1,14 +1,11 @@
 import React, {useContext} from 'react';
-import {MainContext, Props, StateEnum} from "../App";
 import {Link} from "react-router-dom";
 import {i8n} from "../utils/I8n";
+import {MainContext} from "../utils/Context";
+import {FinishedGameResponse} from "../utils/Server";
 
-export function FinishedComponent(props: Props) {
+export function FinishedComponent(props: {game: FinishedGameResponse, name: string}) {
     const ctx = useContext(MainContext);
-    if (!props.game || props.game.state !== StateEnum.FINISHED) {
-        return (<div/>);
-    }
-
     const game = props.game;
 
     return (<div className={"middiv"} style={{textAlign: "center", marginTop: "5vh", padding: "1em"}}>

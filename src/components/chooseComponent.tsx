@@ -1,17 +1,19 @@
 import React, {useContext, useState} from 'react';
-import {BEURL, MainContext, Props, StateEnum} from "../App";
+import {BEURL} from "../App";
 import CanvasDraw from "react-canvas-draw";
 import axios from "axios";
-import {Progress} from "../utils/Progress";
+import {Progress} from "./helpers/Progress";
 import {i8n} from "../utils/I8n";
-import { getAuthHeader } from '../utils/utils';
+import { getAuthHeader } from '../utils/Auth';
+import {MainContext} from "../utils/Context";
+import {ActionChooseGameResponse} from "../utils/Server";
 
-export function ChooseComponent(props: Props) {
+export function ChooseComponent(props: {game: ActionChooseGameResponse, name: string}) {
     const ctx = useContext(MainContext);
     const [error, setError] = useState(0);
     const [clicked, setClicked] = useState("");
 
-    const click = async (e) => {
+    const click = async (e: any) => {
         setClicked(e.target.name);
         const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/guessWord",
                {user: props.name, word: e.target.name}, getAuthHeader());
@@ -21,10 +23,6 @@ export function ChooseComponent(props: Props) {
         } else {
             setError(0);
         }
-    }
-
-    if (!props.game || props.game.state !== StateEnum.ACTION_CHOOSE) {
-        return (<div/>);
     }
 
     const game = props.game;
@@ -66,6 +64,6 @@ export function ChooseComponent(props: Props) {
         {error !== 0 && <div className="alert alert-danger" role="alert">
             {i8n(ctx.lang, "operationFailed")}: {error}</div>
         }
-        <p style={{paddingTop: "10px"}} className="text-monospace">{i8n(ctx.lang, "waitingFor")}: {props.game.waitingFor.join(", ")}</p>
+        <p style={{paddingTop: "10px"}} className="text-monospace">{i8n(ctx.lang, "waitingFor")}: {props.game.waitingFor?.join(", ")}</p>
     </div>)
 }

@@ -1,19 +1,17 @@
 import React, {useContext, useRef, useState} from 'react';
-import {BEURL, MainContext, Props, StateEnum} from "../App";
+import {BEURL} from "../App";
 import CanvasDraw from 'react-canvas-draw';
 import axios from "axios";
 import {i8n} from "../utils/I8n";
-import {getAuthHeader} from "../utils/utils";
+import {getAuthHeader} from "../utils/Auth";
+import {MainContext} from "../utils/Context";
+import {WaitingForPicGameResponsew} from "../utils/Server";
 
-export function WaitForPicComponent(props: Props) {
+export function WaitForPicComponent(props: {game: WaitingForPicGameResponsew, name: string}) {
     const ctx = useContext(MainContext);
     const [error, setError] = useState(0);
     const [sent, setSent] = useState(false);
-    const canvasRef = useRef<CanvasDraw>();
-
-    if (!props.game || props.game.state !== StateEnum.WAITING_FOR_INITIAL_PIC) {
-        return (<div/>);
-    }
+    const canvasRef = useRef<CanvasDraw>(null);
 
     const clicked = async () => {
         try {
@@ -36,10 +34,11 @@ export function WaitForPicComponent(props: Props) {
     };
 
     const erase = async () => {
-        canvasRef.current.clear();
+        canvasRef.current?.clear();
     }
 
-    const waitingForMe = (props.game && props.game.waitingFor.includes(props.name));
+    // FIXME: why is waitingFor optional?
+    const waitingForMe = (props.game && props.game.waitingFor?.includes(props.name));
 
     return (<div className={"middiv"} style={{textAlign: "center", marginTop: "5vh", padding: "1em"}}>
         <p style={{fontSize: "25px"}} className="text-center">{i8n(ctx.lang, "pleaseDraw")} {
@@ -74,7 +73,7 @@ export function WaitForPicComponent(props: Props) {
         {error !== 0 && <div style={{marginTop: "10px"}} className="alert alert-danger" role="alert">
             {i8n(ctx.lang, "operationFailed")}: {error}
         </div> }
-        <p style={{paddingTop: "10px"}} className="text-monospace">{i8n(ctx.lang, "waitingFor")}: {props.game.waitingFor.join(", ")}</p>
+        <p style={{paddingTop: "10px"}} className="text-monospace">{i8n(ctx.lang, "waitingFor")}: {props.game.waitingFor?.join(", ")}</p>
 
     </div>)
 }

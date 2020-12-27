@@ -1,17 +1,15 @@
 import React, {useContext, useState} from 'react';
 import axios from "axios";
-import {BEURL, MainContext, Props, StateEnum} from "../App";
+import {BEURL} from "../App";
 import {i8n} from "../utils/I8n";
-import {getAuthHeader} from "../utils/utils";
+import {getAuthHeader} from "../utils/Auth";
+import {MainContext} from "../utils/Context";
+import {CreateGameResponse} from "../utils/Server";
 
-export function PregameComponent(props: Props) {
+export function PregameComponent(props: {game: CreateGameResponse, name: string}) {
     const ctx = useContext(MainContext);
     const [error, setError] = useState(0);
     const [sent, setSent] = useState(false);
-
-    if (!props.game || props.game.state !== StateEnum.CREATED) {
-        return (<div/>);
-    }
 
     const startGame = async () => {
         setSent(true);

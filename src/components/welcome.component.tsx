@@ -1,12 +1,13 @@
 import React, {useContext, useState} from 'react';
 import axios from "axios"
-import {BEURL, MainContext} from "../App";
+import {BEURL} from "../App";
 import Select from 'react-select';
 import {i8n} from "../utils/I8n";
+import {MainContext} from "../utils/Context";
 
 interface iOption { label: string; value: string; };
 
-export function WelcomeComponent(props) {
+export function WelcomeComponent(props: WelcomeProps) {
     const ctx = useContext(MainContext);
     const options: iOption[] = [
         { value: '20', label: i8n(ctx.lang, "before20p") },
@@ -54,12 +55,8 @@ export function WelcomeComponent(props) {
     return (
         <div className={"middiv"}>
             <div style={{height: "50px"}}>
-                <a href={"#"} onClick={() => setLang("en")}>
-                    <img style={{width: "64px", height: "35px", float: "right"}} src={"flag-en.jpg"}/>
-                </a>
-                <a href={"#"} onClick={() => setLang("ge")}>
-                    <img style={{width: "64px", height: "35px", float: "right", marginRight: "10px"}} src={"flag-ge.jpg"}/>
-                </a>
+                    <button onClick={() => setLang("en")} className="lang_en"/>
+                    <button onClick={() => setLang("ge")} className="lang_ge"/>
             </div>
             <div className="form-group">
                 <input
@@ -128,4 +125,10 @@ export function WelcomeComponent(props) {
             </div>}
         </div>
     );
+}
+
+export interface WelcomeProps {
+    setCode: React.Dispatch<React.SetStateAction<string>>;
+    name: string;
+    setName: React.Dispatch<React.SetStateAction<string>>;
 }
