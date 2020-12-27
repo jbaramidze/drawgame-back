@@ -7,12 +7,12 @@ export enum StateEnum {
     ACTION_NAME = "action_name",
     ACTION_CHOOSE = "action_choose",
     ACTION_SCORES = "action_scores",
-    FINISHED = "finished"
+    FINISHED = "finished",
 }
 
 export interface Response<T> {
     code: number;
-    data?: T
+    data?: T;
 }
 
 export interface SuccessResponse<T> extends Response<T> {
@@ -27,18 +27,20 @@ export interface FailureResponse extends Response<any> {
 export function ResponseOk<T>(data: T): SuccessResponse<T> {
     return {
         code: 0,
-        data: data
+        data: data,
     };
 }
 
 export function ResponseFail(code: number, hint?: string): FailureResponse {
     return {
         code: code,
-        hint
+        hint,
     };
 }
 
-export function ResponseIsOk<T>(response: Response<T>): response is SuccessResponse<T> {
+export function ResponseIsOk<T>(
+    response: Response<T>
+): response is SuccessResponse<T> {
     return response.code === 0;
 }
 
@@ -53,17 +55,22 @@ export interface BaseGameResponse {
     state: StateEnum;
     word?: string;
     waitingFor?: string[];
-};
+}
 
-export type GameResponse = CreateGameResponse | WaitingForPicGameResponsew | ActionNameGameResponse |
-    ActionChooseGameResponse | ActionScoresGameResponse | FinishedGameResponse;
+export type GameResponse =
+    | CreateGameResponse
+    | WaitingForPicGameResponsew
+    | ActionNameGameResponse
+    | ActionChooseGameResponse
+    | ActionScoresGameResponse
+    | FinishedGameResponse;
 
 export interface CreateGameResponse extends BaseGameResponse {
-    state: StateEnum.CREATED
+    state: StateEnum.CREATED;
 }
 
 export interface WaitingForPicGameResponsew extends BaseGameResponse {
-    state: StateEnum.WAITING_FOR_INITIAL_PIC
+    state: StateEnum.WAITING_FOR_INITIAL_PIC;
 }
 
 export interface ActionNameGameResponse extends BaseGameResponse {
