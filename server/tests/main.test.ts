@@ -1,21 +1,22 @@
 import "jest-extended";
 import Game, {StateEnum} from "../models/game.model";
-import mongoose from 'mongoose';
-import supertest from  "supertest"
+import mongoose from "mongoose";
+import supertest from "supertest";
 import {
-    MAX_TIME_IN_ACTION_NAME_SEC, MAX_TIME_IN_ACTION_SCORES_SEC,
+    MAX_TIME_IN_ACTION_NAME_SEC,
+    MAX_TIME_IN_ACTION_SCORES_SEC,
     POINTS_CORRECT_GUESS,
     POINTS_FOR_MISLEADING_SOMEONE,
-    POINTS_WIN_ON_YOUR_TURN
+    POINTS_WIN_ON_YOUR_TURN,
 } from "../index";
 
-const app = require('../server');
+const app = require("../server");
 
 jest.setTimeout(30000);
 
-describe('Post Endpoints', () => {
+describe("Post Endpoints", () => {
     beforeAll(async () => {
-        await mongoose.connect(process.env.MONGO_ADDR, {useNewUrlParser: true, useUnifiedTopology: true})
+        await mongoose.connect(process.env.MONGO_ADDR, {useNewUrlParser: true, useUnifiedTopology: true});
     });
 
     beforeEach(async () => {
@@ -43,19 +44,28 @@ describe('Post Endpoints', () => {
 
         // Check words
         let w = await supertest(app).get("/api/admin/word").send();
-        expect(w.body).toEqual({ code: 0, data: words });
-    };
+        expect(w.body).toEqual({code: 0, data: words});
+    }
 
     async function checkGameJanski() {
-        let game = await supertest(app).get("/api/game/" + code + "?user=janski").set("Authorization", `Bearer ${PlayerTokenMap.get(Player.JANSKI)}`).send();
+        let game = await supertest(app)
+            .get("/api/game/" + code + "?user=janski")
+            .set("Authorization", `Bearer ${PlayerTokenMap.get(Player.JANSKI)}`)
+            .send();
         expect(game.body).toEqual({code: 0, data: gameStateJanski});
     }
     async function checkGameKeti() {
-        let game = await supertest(app).get("/api/game/" + code + "?user=keti").set("Authorization", `Bearer ${PlayerTokenMap.get(Player.KETI)}`).send();
+        let game = await supertest(app)
+            .get("/api/game/" + code + "?user=keti")
+            .set("Authorization", `Bearer ${PlayerTokenMap.get(Player.KETI)}`)
+            .send();
         expect(game.body).toEqual({code: 0, data: gameStateKeti});
     }
     async function checkGameKatu() {
-        let game = await supertest(app).get("/api/game/" + code + "?user=katu").set("Authorization", `Bearer ${PlayerTokenMap.get(Player.KATU)}`).send();
+        let game = await supertest(app)
+            .get("/api/game/" + code + "?user=katu")
+            .set("Authorization", `Bearer ${PlayerTokenMap.get(Player.KATU)}`)
+            .send();
         expect(game.body).toEqual({code: 0, data: gameStateKatu});
     }
     async function checkGame() {
@@ -178,7 +188,7 @@ describe('Post Endpoints', () => {
     function setStateActionScores(guesses: any, tunName: string, turnWord: string, turnScore: number, p1: number, p2: number, p3: number) {
         setState(StateEnum.ACTION_SCORES);
         setGuesses(guesses);
-        setTurnName(tunName, turnWord, turnScore)
+        setTurnName(tunName, turnWord, turnScore);
         setWaiting([]);
         finishStage(p1, p2, p3);
         setStateSeconds(MAX_TIME_IN_ACTION_SCORES_SEC);
@@ -203,99 +213,171 @@ describe('Post Endpoints', () => {
             code,
             owner: "janski",
             maxScore: 50,
-            players: [{name: "janski", score: scores[0]}, {name: "keti", score: scores[1]}, {name: "katu", score: scores[2]}],
+            players: [
+                {name: "janski", score: scores[0]},
+                {name: "keti", score: scores[1]},
+                {name: "katu", score: scores[2]},
+            ],
             state: StateEnum.WAITING_FOR_INITIAL_PIC,
             waitingFor: ["janski", "keti", "katu"],
-            word: expect.toBeOneOf(words)
-        }
+            word: expect.toBeOneOf(words),
+        };
     }
 
     enum Player {
         JANSKI = "janski",
         KETI = "keti",
-        KATU = "katu"
+        KATU = "katu",
     }
 
     const PlayerTokenMap = new Map();
 
     async function savePic(p: Player, data: any) {
-        return (await supertest(app).post("/api/game/" + code + "/savepic").set("Authorization", `Bearer ${PlayerTokenMap.get(p)}`)
-                      .send({user: p, ...data})).body.code
+        return (
+            await supertest(app)
+                .post("/api/game/" + code + "/savepic")
+                .set("Authorization", `Bearer ${PlayerTokenMap.get(p)}`)
+                .send({user: p, ...data})
+        ).body.code;
     }
     async function pickWord(p: Player, data: any) {
-        return (await supertest(app).post("/api/game/" + code + "/pickWord").set("Authorization", `Bearer ${PlayerTokenMap.get(p)}`)
-                      .send({user: p, ...data})).body.code
+        return (
+            await supertest(app)
+                .post("/api/game/" + code + "/pickWord")
+                .set("Authorization", `Bearer ${PlayerTokenMap.get(p)}`)
+                .send({user: p, ...data})
+        ).body.code;
     }
     async function guessWord(p: Player, data: any) {
-        return (await supertest(app).post("/api/game/" + code + "/guessWord").set("Authorization", `Bearer ${PlayerTokenMap.get(p)}`)
-                      .send({user: p, ...data})).body.code
+        return (
+            await supertest(app)
+                .post("/api/game/" + code + "/guessWord")
+                .set("Authorization", `Bearer ${PlayerTokenMap.get(p)}`)
+                .send({user: p, ...data})
+        ).body.code;
     }
 
-
-    it('Test main flow', async () => {
-        let createGame = await supertest(app).post('/api/game').send({user: "janski", score: 50, lang: "ge"});
+    it("Test main flow", async () => {
+        let createGame = await supertest(app).post("/api/game").send({user: "janski", score: 50, lang: "ge"});
         expect(createGame.status).toEqual(422);
 
         await addWord("w1", "ge");
 
         // Create game by Janski
-        createGame = await supertest(app).post('/api/game').send({user: "janski", score: 50, lang: "ge"});
+        createGame = await supertest(app).post("/api/game").send({user: "janski", score: 50, lang: "ge"});
         expect(createGame.body.code).toEqual(0);
 
         code = createGame.body.data.code;
-        PlayerTokenMap.set(Player.JANSKI, createGame.body.data.token)
+        PlayerTokenMap.set(Player.JANSKI, createGame.body.data.token);
 
-        gameStateJanski = {code, owner: "janski", maxScore: 50, players: [{name: "janski", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w1"};
+        gameStateJanski = {
+            code,
+            owner: "janski",
+            maxScore: 50,
+            players: [{name: "janski", score: 0}],
+            state: StateEnum.CREATED,
+            waitingFor: [],
+            word: "w1",
+        };
         await checkGameJanski();
 
         await addWord("w2", "ge");
 
         // Join game by Keti
-        const ketiResponse = await supertest(app).post("/api/game/" + code + "/join").send({user: "keti"})
+        const ketiResponse = await supertest(app)
+            .post("/api/game/" + code + "/join")
+            .send({user: "keti"});
         expect(ketiResponse.body.code).toEqual(0);
-        PlayerTokenMap.set(Player.KETI, ketiResponse.body.data.token)
+        PlayerTokenMap.set(Player.KETI, ketiResponse.body.data.token);
 
-        gameStateKeti = {code, owner: "janski", maxScore: 50, players: [{name: "janski", score: 0}, {name: "keti", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w2"};
+        gameStateKeti = {
+            code,
+            owner: "janski",
+            maxScore: 50,
+            players: [
+                {name: "janski", score: 0},
+                {name: "keti", score: 0},
+            ],
+            state: StateEnum.CREATED,
+            waitingFor: [],
+            word: "w2",
+        };
         gameStateJanski.players.push({name: "keti", score: 0});
 
         await checkGameKeti();
 
         // Cannot join second times with same user
-        expect((await await supertest(app).post("/api/game/" + code + "/join").send({user: "keti"})).body.code)
-            .toEqual(-3);
+        expect(
+            (
+                await await supertest(app)
+                    .post("/api/game/" + code + "/join")
+                    .send({user: "keti"})
+            ).body.code
+        ).toEqual(-3);
 
         // Join game by Katu
         await addWord("w3", "ge");
-        const katuResponse = await supertest(app).post("/api/game/" + code + "/join").send({user: "katu"});
+        const katuResponse = await supertest(app)
+            .post("/api/game/" + code + "/join")
+            .send({user: "katu"});
         expect(katuResponse.body.code).toEqual(0);
-        PlayerTokenMap.set(Player.KATU, katuResponse.body.data.token)
+        PlayerTokenMap.set(Player.KATU, katuResponse.body.data.token);
 
-        gameStateKatu = {code, owner: "janski", maxScore: 50, players: [{name: "janski", score: 0}, {name: "keti", score: 0}, {name: "katu", score: 0}], state: StateEnum.CREATED, waitingFor: [], word: "w3"};
+        gameStateKatu = {
+            code,
+            owner: "janski",
+            maxScore: 50,
+            players: [
+                {name: "janski", score: 0},
+                {name: "keti", score: 0},
+                {name: "katu", score: 0},
+            ],
+            state: StateEnum.CREATED,
+            waitingFor: [],
+            word: "w3",
+        };
         gameStateKeti.players.push({name: "katu", score: 0});
         gameStateJanski.players.push({name: "katu", score: 0});
 
         await checkGame();
 
         // No auth possible for invalid guys
-        expect((await supertest(app).get("/api/game/" + code + "?user=temo").send()).body.code)
-            .toEqual(-100);
+        expect(
+            (
+                await supertest(app)
+                    .get("/api/game/" + code + "?user=temo")
+                    .send()
+            ).body.code
+        ).toEqual(-100);
 
         // Only owner can start the game
-        expect((await supertest(app).post("/api/game/" + code + "/start").set("Authorization", `Bearer ${PlayerTokenMap.get(Player.KETI)}`).send({user: "keti"})).body.code)
-           .toEqual(-3);
+        expect(
+            (
+                await supertest(app)
+                    .post("/api/game/" + code + "/start")
+                    .set("Authorization", `Bearer ${PlayerTokenMap.get(Player.KETI)}`)
+                    .send({user: "keti"})
+            ).body.code
+        ).toEqual(-3);
 
         // Start game
-        expect((await supertest(app).post("/api/game/" + code + "/start").set("Authorization", `Bearer ${PlayerTokenMap.get(Player.JANSKI)}`).send({user: "janski"})).body.code)
-            .toEqual(0);
+        expect(
+            (
+                await supertest(app)
+                    .post("/api/game/" + code + "/start")
+                    .set("Authorization", `Bearer ${PlayerTokenMap.get(Player.JANSKI)}`)
+                    .send({user: "janski"})
+            ).body.code
+        ).toEqual(0);
 
         setState(StateEnum.WAITING_FOR_INITIAL_PIC);
-        setWaiting(["janski", "keti", "katu"])
+        setWaiting(["janski", "keti", "katu"]);
         await checkGame();
 
         // Janski saves a pic
         expect(await savePic(Player.JANSKI, {pic: "AAA"})).toEqual(0);
 
-        setWaiting(["keti", "katu"])
+        setWaiting(["keti", "katu"]);
         await checkGame();
 
         // Nonexistent users cannot auth
@@ -305,7 +387,7 @@ describe('Post Endpoints', () => {
         expect(await savePic(Player.KETI, {pic: "BBB"})).toEqual(0);
 
         // Nothing changes
-        setWaiting(["katu"])
+        setWaiting(["katu"]);
         await checkGame();
 
         // Katu saves a pic
@@ -362,15 +444,18 @@ describe('Post Endpoints', () => {
         // Katu guesses Keti's word
         expect(await guessWord(Player.KATU, {word: "ww1"})).toEqual(0);
 
-        setStateActionScores([
-            {chosen_word: "ww1", guessed_word: "w1", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE},
-            {chosen_word: "ww2", guessed_word: "ww1", name: "katu", score: 0}],
+        setStateActionScores(
+            [
+                {chosen_word: "ww1", guessed_word: "w1", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE},
+                {chosen_word: "ww2", guessed_word: "ww1", name: "katu", score: 0},
+            ],
             "janski",
             "w1",
             POINTS_WIN_ON_YOUR_TURN,
             POINTS_WIN_ON_YOUR_TURN,
             POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE,
-            0);
+            0
+        );
 
         await checkGame();
 
@@ -378,7 +463,7 @@ describe('Post Endpoints', () => {
         await checkGame();
 
         // pass time.
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
         /**************************************
          *
@@ -418,19 +503,22 @@ describe('Post Endpoints', () => {
         // Katu guesses her own too
         expect(await guessWord(Player.KATU, {word: "ww11"})).toEqual(0);
 
-        setStateActionScores([
-            {chosen_word: "ww11", guessed_word: "ww11", name: "janski", score: POINTS_FOR_MISLEADING_SOMEONE},
-            {chosen_word: "ww11", guessed_word: "ww11", name: "katu", score: POINTS_FOR_MISLEADING_SOMEONE}],
+        setStateActionScores(
+            [
+                {chosen_word: "ww11", guessed_word: "ww11", name: "janski", score: POINTS_FOR_MISLEADING_SOMEONE},
+                {chosen_word: "ww11", guessed_word: "ww11", name: "katu", score: POINTS_FOR_MISLEADING_SOMEONE},
+            ],
             "keti",
             "w2",
             0,
             POINTS_FOR_MISLEADING_SOMEONE,
             0,
-            POINTS_FOR_MISLEADING_SOMEONE);
+            POINTS_FOR_MISLEADING_SOMEONE
+        );
         await checkGame();
 
         // pass time.
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
         /**************************************
          *
@@ -465,19 +553,22 @@ describe('Post Endpoints', () => {
         // Keti also guesses correctly, it's own word!
         expect(await guessWord(Player.KETI, {word: "w3"})).toEqual(0);
 
-        setStateActionScores([
-            {chosen_word: "ww22", guessed_word: "w3", name: "janski", score: POINTS_CORRECT_GUESS},
-            {chosen_word: "w3", guessed_word: "w3", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE}],
+        setStateActionScores(
+            [
+                {chosen_word: "ww22", guessed_word: "w3", name: "janski", score: POINTS_CORRECT_GUESS},
+                {chosen_word: "w3", guessed_word: "w3", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE},
+            ],
             "katu",
             "w3",
             0,
             POINTS_CORRECT_GUESS,
             POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE,
-            0);
+            0
+        );
         await checkGame();
 
         // pass time.
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
         /**************************************
          *
@@ -524,7 +615,7 @@ describe('Post Endpoints', () => {
         expect(await pickWord(Player.KETI, {word: "w41"})).toEqual(0);
 
         // pass time.
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
         // double check sizes
         await checkChooseFromWords(["w41", "w4"]);
@@ -539,20 +630,23 @@ describe('Post Endpoints', () => {
         // katu guesses keti's
         expect(await guessWord(Player.KATU, {word: "w41"})).toEqual(0);
 
-        setStateActionScores([
+        setStateActionScores(
+            [
                 {chosen_word: "w41", guessed_word: "w4", name: "keti", score: POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE},
-                {chosen_word: undefined, guessed_word: "w41", name: "katu", score: 0}],
+                {chosen_word: undefined, guessed_word: "w41", name: "katu", score: 0},
+            ],
             "janski",
             "w4",
             POINTS_WIN_ON_YOUR_TURN,
             POINTS_WIN_ON_YOUR_TURN,
             POINTS_CORRECT_GUESS + POINTS_FOR_MISLEADING_SOMEONE,
-            0);
+            0
+        );
 
         await checkGame();
 
         // time passes
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
         setStateActionName(["janski", "katu"], "EEE", gameStateKeti);
         await checkGame();
@@ -561,7 +655,7 @@ describe('Post Endpoints', () => {
         expect(await pickWord(Player.KATU, {word: "w51"})).toEqual(0);
 
         // pass time.
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
         // double check sizes
         await checkChooseFromWords(["w51", "w5"]);
@@ -574,22 +668,25 @@ describe('Post Endpoints', () => {
         expect(await guessWord(Player.JANSKI, {word: "w5"})).toEqual(0);
         expect(await guessWord(Player.KATU, {word: "w5"})).toEqual(0);
 
-        setStateActionScores([
+        setStateActionScores(
+            [
                 {chosen_word: undefined, guessed_word: "w5", name: "janski", score: POINTS_CORRECT_GUESS},
-                {chosen_word: "w51", guessed_word: "w5", name: "katu", score: POINTS_CORRECT_GUESS}],
+                {chosen_word: "w51", guessed_word: "w5", name: "katu", score: POINTS_CORRECT_GUESS},
+            ],
             "keti",
             "w5",
             0,
             POINTS_CORRECT_GUESS,
             0,
-            POINTS_CORRECT_GUESS);
+            POINTS_CORRECT_GUESS
+        );
 
         await checkGame();
 
         // Covered both cases of when cannot choose the word. Now let's test failing to guess the word.
 
         // time passes
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
         setStateActionName(["janski", "keti"], "FFF", gameStateKatu);
         await checkGame();
@@ -606,21 +703,24 @@ describe('Post Endpoints', () => {
         // janski guesses, katu is too late
         expect(await guessWord(Player.JANSKI, {word: "w6"})).toEqual(0);
 
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
-        setStateActionScores([
+        setStateActionScores(
+            [
                 {chosen_word: "w61", guessed_word: "w6", name: "janski", score: POINTS_CORRECT_GUESS},
-                {chosen_word: "w62", guessed_word: undefined, name: "keti", score: 0}],
+                {chosen_word: "w62", guessed_word: undefined, name: "keti", score: 0},
+            ],
             "katu",
             "w6",
             POINTS_WIN_ON_YOUR_TURN,
             POINTS_CORRECT_GUESS,
             0,
-            POINTS_WIN_ON_YOUR_TURN);
+            POINTS_WIN_ON_YOUR_TURN
+        );
 
         await checkGame();
 
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
         /**************************************
          *
@@ -674,17 +774,20 @@ describe('Post Endpoints', () => {
         // keti guesses katu's, katu is too late.
         expect(await guessWord(Player.KETI, {word: "w72"})).toEqual(0);
 
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
-        setStateActionScores([
+        setStateActionScores(
+            [
                 {chosen_word: "w71", guessed_word: "w72", name: "keti", score: 0},
-                {chosen_word: "w72", guessed_word: undefined, name: "katu", score: POINTS_FOR_MISLEADING_SOMEONE}],
+                {chosen_word: "w72", guessed_word: undefined, name: "katu", score: POINTS_FOR_MISLEADING_SOMEONE},
+            ],
             "janski",
             "w7",
             0,
             0,
             0,
-            POINTS_FOR_MISLEADING_SOMEONE);
+            POINTS_FOR_MISLEADING_SOMEONE
+        );
 
         await checkGame();
 
@@ -692,14 +795,14 @@ describe('Post Endpoints', () => {
         // needs one POINTS_CORRECT_GUESS and the game is over!
 
         const score = 2 * POINTS_WIN_ON_YOUR_TURN + POINTS_FOR_MISLEADING_SOMEONE + 4 * POINTS_CORRECT_GUESS;
-        await Game.updateOne({code}, {$set: {"maxScore": score}});
+        await Game.updateOne({code}, {$set: {maxScore: score}});
 
         gameStateJanski.maxScore = score;
         gameStateKeti.maxScore = score;
         gameStateKatu.maxScore = score;
 
         // time passes
-        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900*1000}});
+        await Game.updateOne({}, {$set: {stageTillTime: Date.now() - 900 * 1000}});
 
         setStateActionName(["janski", "katu"], "HHH", gameStateKeti);
         await checkGame();
@@ -718,7 +821,7 @@ describe('Post Endpoints', () => {
         expect(await guessWord(Player.KATU, {word: "w8"})).toEqual(0);
 
         setState(StateEnum.FINISHED);
-        finishStage(POINTS_CORRECT_GUESS, 0, POINTS_CORRECT_GUESS)
+        finishStage(POINTS_CORRECT_GUESS, 0, POINTS_CORRECT_GUESS);
         setWaiting([]);
         clearGuesses();
         clearTurnName();

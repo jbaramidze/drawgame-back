@@ -1,6 +1,6 @@
 export interface Response<T> {
     code: number;
-    data?: T
+    data?: T;
 }
 
 export interface SuccessResponse<T> extends Response<T> {
@@ -15,14 +15,14 @@ export interface FailureResponse extends Response<any> {
 export function ResponseOk<T>(data: T): SuccessResponse<T> {
     return {
         code: 0,
-        data: data
+        data: data,
     };
 }
 
 export function ResponseFail(code: number, hint?: string): FailureResponse {
     return {
         code: code,
-        hint
+        hint,
     };
 }
 

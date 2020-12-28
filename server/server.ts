@@ -1,13 +1,13 @@
-import express from "express"
-import cors from "cors"
-import {GameRouter} from "./routers/GameRouter"
+import express from "express";
+import cors from "cors";
+import {GameRouter} from "./routers/GameRouter";
 import {GameService} from "./services/GameService";
 import {AdminService} from "./services/AdminService";
 import {AdminRouter} from "./routers/AdminRouter";
 import {GameServiceHelpers} from "./services/GameServiceHelpers";
 import path from "path";
-import { LocalLocker } from './services/Locker';
-import { AuthService } from './services/AuthService';
+import {LocalLocker} from "./services/Locker";
+import {AuthService} from "./services/AuthService";
 
 const locker = new LocalLocker();
 const gameServiceHelpers = new GameServiceHelpers();
@@ -26,8 +26,7 @@ apiRouter.use("/game", gameRouter.getRouter());
 apiRouter.use("/admin", adminRouter.getRouter());
 app.use("/api", apiRouter);
 
-const buildPath = path.join(__dirname, '..', 'build');
+const buildPath = path.join(__dirname, "..", "build");
 app.use(express.static(buildPath));
 
 module.exports = app;
-

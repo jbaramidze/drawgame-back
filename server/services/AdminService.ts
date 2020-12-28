@@ -10,8 +10,7 @@ export class AdminService {
     }
 
     public async getAllWords() {
-        const items = await Word.find({}, {"lang": 1, "word": 1, "_id": 0});
+        const items = await Word.find({}, {lang: 1, word: 1, _id: 0});
         return ResponseOk(items);
     }
-
 }

@@ -1,6 +1,6 @@
-import { sleep } from "../utils/other";
-import { DGError } from "../common/DGError";
-import { Context } from "./Context";
+import {sleep} from "../utils/other";
+import {DGError} from "../common/DGError";
+import {Context} from "./Context";
 
 export abstract class BaseLocker {
     public abstract async lock(ctx: Context, word: string);
@@ -17,14 +17,14 @@ export abstract class BaseLocker {
 export class LocalLocker extends BaseLocker {
     private readonly LOCK_RETRIES = 200;
     private readonly RETRY_PERIOD_MS = 50;
-    private readonly M = new Map<string, {hash: string, c: number}>();
+    private readonly M = new Map<string, {hash: string; c: number}>();
     public async lock(ctx: Context, word: string) {
         let acquired = false;
         if (!this.M.has(word)) {
             this.M.set(word, {hash: "", c: 0});
         }
 
-        for(let i = 0; i < this.LOCK_RETRIES; i++) {
+        for (let i = 0; i < this.LOCK_RETRIES; i++) {
             const s = this.M.get(word);
             if (s.c === 0) {
                 this.M.set(word, {hash: ctx.getHash(), c: 1});
