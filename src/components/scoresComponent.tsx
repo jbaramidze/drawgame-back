@@ -10,10 +10,7 @@ export function ScoresComponent(props: Props) {
     const game = props.game;
 
     return (
-        <div
-            style={{textAlign: "center", marginTop: "2vh", padding: "1em"}}
-            className={"middiv"}
-        >
+        <div style={{textAlign: "center", marginTop: "2vh", padding: "1em"}} className={"middiv"}>
             <CanvasDraw
                 disabled={true}
                 saveData={game.namePic}
@@ -24,8 +21,7 @@ export function ScoresComponent(props: Props) {
                 lazyRadius={0}
             />
             <p style={{fontSize: "25px"}} className="text-center">
-                {i8n(ctx.lang, "picBelongsToAndGotPoints")}{" "}
-                <b>{game.turnWord}</b>
+                {i8n(ctx.lang, "picBelongsToAndGotPoints")} <b>{game.turnWord}</b>
             </p>
             <div style={{overflow: "auto"}}>
                 <table className="table">
@@ -43,47 +39,22 @@ export function ScoresComponent(props: Props) {
                             <td>{i8n(ctx.lang, "author")}</td>
                             <td></td>
                             <td>
-                                {
-                                    game.players.find(
-                                        (p) => p.name === game.turn
-                                    )!.score
-                                }{" "}
-                                (+{game.turnScore})
+                                {game.players.find((p) => p.name === game.turn)!.score} (+{game.turnScore})
                             </td>
                         </tr>
                         {game.guesses.map((g) => (
                             <tr key={g.name}>
                                 <td>{g.name}</td>
+                                <td>{g.guessed_word === game.turnWord ? i8n(ctx.lang, "guessed") : i8n(ctx.lang, "couldnotguess")}</td>
+                                <td>{game.guesses.reduce((p, c) => (c.guessed_word === g.chosen_word ? p + 1 : p), 0)}</td>
                                 <td>
-                                    {g.guessed_word === game.turnWord
-                                        ? i8n(ctx.lang, "guessed")
-                                        : i8n(ctx.lang, "couldnotguess")}
-                                </td>
-                                <td>
-                                    {game.guesses.reduce(
-                                        (p, c) =>
-                                            c.guessed_word === g.chosen_word
-                                                ? p + 1
-                                                : p,
-                                        0
-                                    )}
-                                </td>
-                                <td>
-                                    {
-                                        game.players.find(
-                                            (p) => p.name === g.name
-                                        )!.score
-                                    }{" "}
-                                    (+{g.score})
+                                    {game.players.find((p) => p.name === g.name)!.score} (+{g.score})
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
-                <Progress
-                    remaining={game.remainingSec}
-                    total={game.stateSeconds}
-                />
+                <Progress remaining={game.remainingSec} total={game.stateSeconds} />
             </div>
         </div>
     );

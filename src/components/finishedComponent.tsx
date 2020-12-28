@@ -9,10 +9,7 @@ export function FinishedComponent(props: Props) {
     const game = props.game;
 
     return (
-        <div
-            className={"middiv"}
-            style={{textAlign: "center", marginTop: "5vh", padding: "1em"}}
-        >
+        <div className={"middiv"} style={{textAlign: "center", marginTop: "5vh", padding: "1em"}}>
             <p style={{fontSize: "25px"}} className="text-center">
                 {i8n(ctx.lang, "gameOver")}
             </p>

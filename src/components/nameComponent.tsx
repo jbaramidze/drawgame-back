@@ -16,11 +16,7 @@ export function NameComponent(props: Props) {
 
     const nameThePic = async () => {
         setSent(true);
-        const response = await axios.post(
-            BEURL + "/api/game/" + props.game.code + "/pickWord",
-            {user: props.name, word: word},
-            getAuthHeader()
-        );
+        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/pickWord", {user: props.name, word: word}, getAuthHeader());
         if (response.data.code < 0) {
             setSent(false);
             setError(response.data.code);
@@ -30,14 +26,10 @@ export function NameComponent(props: Props) {
     };
 
     const game = props.game;
-    const waitingForMe =
-        props.game && props.game.waitingFor?.includes(props.name);
+    const waitingForMe = props.game && props.game.waitingFor?.includes(props.name);
 
     return (
-        <div
-            style={{textAlign: "center", marginTop: "2vh", padding: "1em"}}
-            className={"middiv"}
-        >
+        <div style={{textAlign: "center", marginTop: "2vh", padding: "1em"}} className={"middiv"}>
             <CanvasDraw
                 disabled={true}
                 saveData={game.namePic}

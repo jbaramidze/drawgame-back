@@ -56,11 +56,7 @@ const map = new Map<string, {[key in Languages]: string}>([
     ["author", {ge: "ავტორი", en: "Author"}],
 ]);
 
-export function i8n(
-    l: Languages,
-    key: string,
-    args: Array<string | number> = []
-) {
+export function i8n(l: Languages, key: string, args: Array<string | number> = []) {
     let data: string = map.get(key)?.[l]!;
     for (let i = 0; i < args.length; i++) {
         data = data.replace(`@${i}@`, String(args[i]));

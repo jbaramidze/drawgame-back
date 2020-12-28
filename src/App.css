@@ -1,92 +1,91 @@
 .App {
-  text-align: center;
+    text-align: center;
 }
 
 .App-logo {
-  height: 40vmin;
-  pointer-events: none;
+    height: 40vmin;
+    pointer-events: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+    .App-logo {
+        animation: App-logo-spin infinite 20s linear;
+    }
 }
 
 .App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+    background-color: #282c34;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(10px + 2vmin);
+    color: white;
 }
 
 .App-link {
-  color: #61dafb;
+    color: #61dafb;
 }
 
 @keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @media screen and (max-width: 470px) {
-  .welcome_btn_l {
-    height: 4em;
-  }
-  .welcome_btn_r {
-    height: 4em;
-  }
+    .welcome_btn_l {
+        height: 4em;
+    }
+    .welcome_btn_r {
+        height: 4em;
+    }
 }
 
 .welcome_btn_l {
-  width: 48%;
-  margin-right: 2%;
+    width: 48%;
+    margin-right: 2%;
 }
 
 .welcome_btn_r {
-  width: 48%;
-  margin-left: 2%;
+    width: 48%;
+    margin-left: 2%;
 }
 
 .pregame_code {
-  text-decoration: underline;
-  color: firebrick;
-
+    text-decoration: underline;
+    color: firebrick;
 }
 
 .middiv {
-  width: 80%;
-  max-width: 800px;
-  margin: 30vh auto auto;
-  padding: 2em;
-  border: 1px solid black;
-  border-radius: 2em;
-  background: beige;
+    width: 80%;
+    max-width: 800px;
+    margin: 30vh auto auto;
+    padding: 2em;
+    border: 1px solid black;
+    border-radius: 2em;
+    background: beige;
 }
 
 .lang_en {
-  width: 64px;
-  height: 35px;
-  float: right;
-  background: url("./img/flag-en.jpg");
-  background-size: 64px 35px;
-  border: 0px;
+    width: 64px;
+    height: 35px;
+    float: right;
+    background: url("./img/flag-en.jpg");
+    background-size: 64px 35px;
+    border: 0px;
 }
 
 .lang_ge {
-  width: 64px;
-  height: 35px;
-  float: right;
-  background: url("./img/flag-ge.jpg");
-  margin-right: 10px;
-  background-size: 64px 35px;
-  border: 0px;
+    width: 64px;
+    height: 35px;
+    float: right;
+    background: url("./img/flag-ge.jpg");
+    margin-right: 10px;
+    background-size: 64px 35px;
+    border: 0px;
 }

@@ -17,12 +17,8 @@ import {StateEnum, Response, ResponseIsOk, GameResponse} from "./utils/Server";
 export const BEURL = process.env.REACT_APP_BEURL || "";
 
 export function App() {
-    const [code, setCode] = useState<string>(
-        sessionStorage.getItem("code") || ""
-    );
-    const [name, setName] = useState<string>(
-        sessionStorage.getItem("name") || ""
-    );
+    const [code, setCode] = useState<string>(sessionStorage.getItem("code") || "");
+    const [name, setName] = useState<string>(sessionStorage.getItem("name") || "");
     const [game, setGame] = useState<GameResponse | null>(null);
 
     useEffect(() => {
@@ -33,10 +29,7 @@ export function App() {
         const poll = async () => {
             let response: AxiosResponse<Response<GameResponse>>;
             try {
-                response = await axios.get(
-                    BEURL + "/api/game/" + code + "?user=" + name,
-                    getAuthHeader()
-                );
+                response = await axios.get(BEURL + "/api/game/" + code + "?user=" + name, getAuthHeader());
             } catch (e) {
                 setTimeout(poll, 1500);
                 return;
@@ -63,34 +56,14 @@ export function App() {
     }, [code, name]);
 
     return (
-        <MainContext.Provider
-            value={{lang: (localStorage.getItem("lang") as Languages) || "en"}}
-        >
-            {game == null && (
-                <WelcomeComponent
-                    setCode={setCode}
-                    name={name}
-                    setName={setName}
-                />
-            )}
-            {game?.state === StateEnum.CREATED && (
-                <PregameComponent name={name!} game={game} />
-            )}
-            {game?.state === StateEnum.WAITING_FOR_INITIAL_PIC && (
-                <WaitForPicComponent name={name!} game={game} />
-            )}
-            {game?.state === StateEnum.ACTION_NAME && (
-                <NameComponent name={name!} game={game} />
-            )}
-            {game?.state === StateEnum.ACTION_CHOOSE && (
-                <ChooseComponent name={name!} game={game} />
-            )}
-            {game?.state === StateEnum.ACTION_SCORES && (
-                <ScoresComponent name={name!} game={game} />
-            )}
-            {game?.state === StateEnum.FINISHED && (
-                <FinishedComponent name={name!} game={game} />
-            )}
+        <MainContext.Provider value={{lang: (localStorage.getItem("lang") as Languages) || "en"}}>
+            {game == null && <WelcomeComponent setCode={setCode} name={name} setName={setName} />}
+            {game?.state === StateEnum.CREATED && <PregameComponent name={name!} game={game} />}
+            {game?.state === StateEnum.WAITING_FOR_INITIAL_PIC && <WaitForPicComponent name={name!} game={game} />}
+            {game?.state === StateEnum.ACTION_NAME && <NameComponent name={name!} game={game} />}
+            {game?.state === StateEnum.ACTION_CHOOSE && <ChooseComponent name={name!} game={game} />}
+            {game?.state === StateEnum.ACTION_SCORES && <ScoresComponent name={name!} game={game} />}
+            {game?.state === StateEnum.FINISHED && <FinishedComponent name={name!} game={game} />}
         </MainContext.Provider>
     );
 }

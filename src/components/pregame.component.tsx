@@ -13,11 +13,7 @@ export function PregameComponent(props: Props) {
 
     const startGame = async () => {
         setSent(true);
-        const response = await axios.post(
-            BEURL + "/api/game/" + props.game.code + "/start",
-            {user: props.name},
-            getAuthHeader()
-        );
+        const response = await axios.post(BEURL + "/api/game/" + props.game.code + "/start", {user: props.name}, getAuthHeader());
         if (response.data.code < 0) {
             setSent(false);
             setError(response.data.code);

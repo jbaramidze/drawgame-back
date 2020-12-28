@@ -45,9 +45,7 @@ export function ChooseComponent(props: Props) {
                 disabled={!!disabled}
                 name={word}
                 onClick={click}
-                className={`btn ${
-                    clicked !== word ? "btn-primary" : "btn-info"
-                } btn-sm`}
+                className={`btn ${clicked !== word ? "btn-primary" : "btn-info"} btn-sm`}
             >
                 {word}
             </button>
@@ -55,10 +53,7 @@ export function ChooseComponent(props: Props) {
     });
 
     return (
-        <div
-            style={{textAlign: "center", marginTop: "2vh", padding: "1em"}}
-            className={"middiv"}
-        >
+        <div style={{textAlign: "center", marginTop: "2vh", padding: "1em"}} className={"middiv"}>
             <CanvasDraw
                 disabled={true}
                 saveData={game.namePic}
@@ -86,8 +81,7 @@ export function ChooseComponent(props: Props) {
                 </div>
             )}
             <p style={{paddingTop: "10px"}} className="text-monospace">
-                {i8n(ctx.lang, "waitingFor")}:{" "}
-                {props.game.waitingFor?.join(", ")}
+                {i8n(ctx.lang, "waitingFor")}: {props.game.waitingFor?.join(", ")}
             </p>
         </div>
     );

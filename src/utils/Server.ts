@@ -38,9 +38,7 @@ export function ResponseFail(code: number, hint?: string): FailureResponse {
     };
 }
 
-export function ResponseIsOk<T>(
-    response: Response<T>
-): response is SuccessResponse<T> {
+export function ResponseIsOk<T>(response: Response<T>): response is SuccessResponse<T> {
     return response.code === 0;
 }
 

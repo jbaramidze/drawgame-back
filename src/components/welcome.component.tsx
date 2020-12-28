@@ -19,19 +19,14 @@ export function WelcomeComponent(props: Props) {
     ];
 
     const [codeValue, setCodeValue] = useState("");
-    const [connectToggled, setConnectToggled] = useState<
-        "none" | "connect" | "create"
-    >("none");
+    const [connectToggled, setConnectToggled] = useState<"none" | "connect" | "create">("none");
     const [sent, setSent] = useState(false);
     const [score, setScore] = useState(options[0]);
     const [error, setError] = useState(0);
 
     const join = async () => {
         setSent(true);
-        const response = await axios.post(
-            BEURL + "/api/game/" + codeValue + "/join",
-            {user: props.name}
-        );
+        const response = await axios.post(BEURL + "/api/game/" + codeValue + "/join", {user: props.name});
         if (response.data.code < 0) {
             setSent(false);
             setError(response.data.code);
@@ -108,31 +103,17 @@ export function WelcomeComponent(props: Props) {
                     />
                 </div>,
                 <div className="form-group" key={"div2"}>
-                    <button
-                        onClick={join}
-                        disabled={sent}
-                        style={{width: "100%"}}
-                        className="btn btn-success"
-                    >
+                    <button onClick={join} disabled={sent} style={{width: "100%"}} className="btn btn-success">
                         {i8n(ctx.lang, "connect")}
                     </button>
                 </div>,
             ]}
             {connectToggled === "create" && [
                 <div className="form-group" key={"div1"}>
-                    <Select
-                        value={score}
-                        options={options}
-                        onChange={(e) => setScore(e as iOption)}
-                    />
+                    <Select value={score} options={options} onChange={(e) => setScore(e as iOption)} />
                 </div>,
                 <div className="form-group" key={"div2"}>
-                    <button
-                        onClick={create}
-                        disabled={sent}
-                        style={{width: "100%"}}
-                        className="btn btn-success"
-                    >
+                    <button onClick={create} disabled={sent} style={{width: "100%"}} className="btn btn-success">
                         {i8n(ctx.lang, "create")}
                     </button>
                 </div>,

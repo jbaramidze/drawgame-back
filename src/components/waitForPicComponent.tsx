@@ -15,10 +15,7 @@ export function WaitForPicComponent(props: Props) {
 
     const clicked = async () => {
         try {
-            if (
-                JSON.parse(canvasRef.current?.getSaveData() as any).lines
-                    .length === 0
-            ) {
+            if (JSON.parse(canvasRef.current?.getSaveData() as any).lines.length === 0) {
                 return;
             }
         } catch (e) {}
@@ -44,14 +41,10 @@ export function WaitForPicComponent(props: Props) {
     };
 
     // FIXME: why is waitingFor optional?
-    const waitingForMe =
-        props.game && props.game.waitingFor?.includes(props.name);
+    const waitingForMe = props.game && props.game.waitingFor?.includes(props.name);
 
     return (
-        <div
-            className={"middiv"}
-            style={{textAlign: "center", marginTop: "5vh", padding: "1em"}}
-        >
+        <div className={"middiv"} style={{textAlign: "center", marginTop: "5vh", padding: "1em"}}>
             <p style={{fontSize: "25px"}} className="text-center">
                 {i8n(ctx.lang, "pleaseDraw")} {props.game.word}
             </p>
@@ -67,37 +60,20 @@ export function WaitForPicComponent(props: Props) {
                 />
             </div>
             <div>
-                <button
-                    type="button"
-                    className="btn btn-secondary btn-sm welcome_btn_l"
-                    disabled={sent || !waitingForMe}
-                    onClick={erase}
-                >
+                <button type="button" className="btn btn-secondary btn-sm welcome_btn_l" disabled={sent || !waitingForMe} onClick={erase}>
                     {i8n(ctx.lang, "clear")}
                 </button>
-                <button
-                    type="button"
-                    className="btn btn-primary btn-sm welcome_btn_r"
-                    disabled={sent || !waitingForMe}
-                    onClick={clicked}
-                >
-                    {sent || !waitingForMe
-                        ? i8n(ctx.lang, "accepted")
-                        : i8n(ctx.lang, "send")}
+                <button type="button" className="btn btn-primary btn-sm welcome_btn_r" disabled={sent || !waitingForMe} onClick={clicked}>
+                    {sent || !waitingForMe ? i8n(ctx.lang, "accepted") : i8n(ctx.lang, "send")}
                 </button>
             </div>
             {error !== 0 && (
-                <div
-                    style={{marginTop: "10px"}}
-                    className="alert alert-danger"
-                    role="alert"
-                >
+                <div style={{marginTop: "10px"}} className="alert alert-danger" role="alert">
                     {i8n(ctx.lang, "operationFailed")}: {error}
                 </div>
             )}
             <p style={{paddingTop: "10px"}} className="text-monospace">
-                {i8n(ctx.lang, "waitingFor")}:{" "}
-                {props.game.waitingFor?.join(", ")}
+                {i8n(ctx.lang, "waitingFor")}: {props.game.waitingFor?.join(", ")}
             </p>
         </div>
     );
