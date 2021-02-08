@@ -19,7 +19,7 @@
     "bootstrap": "^4.5.0",
     "eslint-config-prettier": "^7.1.0",
     "eslint-plugin-prettier": "^3.3.0",
-    "jquery": "^1.9.1",
+    "jquery": "^3.5.0",
     "prettier": "^2.2.1",
     "react": "^16.13.1",
     "react-bootstrap": "^1.2.1",
